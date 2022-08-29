@@ -1,3 +1,4 @@
+use std::ptr::null;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PresentMode};
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
@@ -21,8 +22,22 @@ fn main() {
         .run();
 }
 
+#[derive(Component, Debug)]
+struct Position {
+    col_label: char,
+    row_label: u8,
+}
+
+#[derive(Component, Debug)]
+struct Tile {
+    position: Position,
+}
+
 #[derive(Component)]
-struct Tile;
+struct Piece {
+    name: String,
+    position: Position,
+}
 
 fn setup(
     mut commands: Commands,
@@ -39,12 +54,16 @@ fn setup(
                 offset + row as f32 * TILE_SIZE.y
             );
 
+            let current_pos: Position = get_position(row, &column);
+            // println!("Current position: {:?}", current_pos);
+            // println!("Tile position: {:?}", tile_position);
+
             commands
                 .spawn()
-                .insert(Tile)
+                .insert(Tile { position: current_pos })
                 .insert_bundle(SpriteBundle {
                     sprite: Sprite {
-                        color: get_tile_color(row, column),
+                        color: get_tile_color(&row, &column),
                         ..default()
                     },
                     transform: Transform {
@@ -58,7 +77,7 @@ fn setup(
     }
 }
 
-fn get_tile_color(row: u8, column: u8) -> Color {
+fn get_tile_color(row: &u8, column: &u8) -> Color {
     if row % 2 == 0 {
         if column % 2 == 0 {
             return TILE_LIGHT;
@@ -69,4 +88,23 @@ fn get_tile_color(row: u8, column: u8) -> Color {
         return TILE_DARK;
     }
     return TILE_LIGHT;
+}
+
+fn get_position(row: u8, column: &u8) -> Position {
+    let column_position: char = match column {
+        0 => 'a',
+        1 => 'b',
+        2 => 'c',
+        3 => 'd',
+        4 => 'e',
+        5 => 'f',
+        6 => 'g',
+        7 => 'h',
+        _ => ' '
+    };
+
+    return Position {
+        col_label: column_position,
+        row_label: row + 1
+    };
 }
