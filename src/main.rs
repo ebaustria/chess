@@ -1,4 +1,3 @@
-use std::ptr::null;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PresentMode};
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
@@ -22,9 +21,21 @@ fn main() {
         .run();
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Clone, Copy)]
+enum ColLabel {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H
+}
+
+#[derive(Component, Debug, Clone, Copy)]
 struct Position {
-    col_label: char,
+    col_label: ColLabel,
     row_label: u8,
 }
 
@@ -41,8 +52,9 @@ struct Piece {
 
 fn setup(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+    // mut meshes: ResMut<Assets<Mesh>>,
+    // mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
 
@@ -73,34 +85,88 @@ fn setup(
                    },
                    ..default()
                 });
+
+            if row > 5 || row < 2 {
+                let name = get_piece_name(current_pos);
+                let path = format!("../assets/pieces/{}.png", name);
+                commands
+                    .spawn()
+                    .insert(Piece { name: String::from(name), position: current_pos })
+                    .insert_bundle(SpriteBundle {
+                        texture: asset_server.load(&path),
+                        transform: Transform {
+                            translation: tile_position.extend(0.0),
+                            // scale: Vec3::new(TILE_SIZE.x, TILE_SIZE.y, 1.0),
+                            ..default()
+                        },
+                        ..default()
+                    });
+            }
         }
     }
+}
+
+fn get_piece_name(current_position: Position) -> &'static str {
+    let Position { row_label, col_label} = current_position;
+
+    if row_label == 7 {
+        return "bP";
+    }
+
+    if row_label == 2 {
+        return "wP";
+    }
+
+    if row_label == 8 {
+        let name = match col_label {
+            ColLabel::A => "bR",
+            ColLabel::B => "bN",
+            ColLabel::C => "bB",
+            ColLabel::D => "bQ",
+            ColLabel::E => "bK",
+            ColLabel::F => "bB",
+            ColLabel::G => "bN",
+            ColLabel::H => "bR"
+        };
+        return name;
+    }
+
+    let name = match col_label {
+        ColLabel::A => "wR",
+        ColLabel::B => "wN",
+        ColLabel::C => "wB",
+        ColLabel::D => "wQ",
+        ColLabel::E => "wK",
+        ColLabel::F => "wB",
+        ColLabel::G => "wN",
+        ColLabel::H => "wR"
+    };
+    return name;
 }
 
 fn get_tile_color(row: &u8, column: &u8) -> Color {
     if row % 2 == 0 {
         if column % 2 == 0 {
-            return TILE_LIGHT;
+            return TILE_DARK;
         }
-        return TILE_DARK;
+        return TILE_LIGHT;
     }
     if column % 2 == 0 {
-        return TILE_DARK;
+        return TILE_LIGHT;
     }
-    return TILE_LIGHT;
+    return TILE_DARK;
 }
 
 fn get_position(row: u8, column: &u8) -> Position {
-    let column_position: char = match column {
-        0 => 'a',
-        1 => 'b',
-        2 => 'c',
-        3 => 'd',
-        4 => 'e',
-        5 => 'f',
-        6 => 'g',
-        7 => 'h',
-        _ => ' '
+    let column_position: ColLabel = match column {
+        0 => ColLabel::A,
+        1 => ColLabel::B,
+        2 => ColLabel::C,
+        3 => ColLabel::D,
+        4 => ColLabel::E,
+        5 => ColLabel::F,
+        6 => ColLabel::G,
+        _ => ColLabel::H,
     };
 
     return Position {
