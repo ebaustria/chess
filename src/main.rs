@@ -18,8 +18,12 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
+        .add_system(print_mouse_events_system)
         .run();
 }
+
+#[derive(Component)]
+struct MainCamera;
 
 #[derive(Component, Debug, Clone, Copy)]
 enum ColLabel {
@@ -42,6 +46,7 @@ struct Position {
 #[derive(Component, Debug)]
 struct Tile {
     position: Position,
+    coordinates: Vec2
 }
 
 #[derive(Component)]
@@ -56,7 +61,7 @@ fn setup(
     // mut meshes: ResMut<Assets<Mesh>>,
     // mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn_bundle(Camera2dBundle::default()).insert(MainCamera);
 
     for row in 0..NUM_ROWS {
         for column in 0..NUM_COLUMNS {
@@ -67,12 +72,12 @@ fn setup(
             );
 
             let current_pos: Position = get_position(row, &column);
-            // println!("Current position: {:?}", current_pos);
-            // println!("Tile position: {:?}", tile_position);
+            println!("Current position: {:?}", current_pos);
+            println!("Tile position: {:?}", tile_position);
 
             commands
                 .spawn()
-                .insert(Tile { position: current_pos })
+                .insert(Tile { position: current_pos, coordinates: tile_position })
                 .insert_bundle(SpriteBundle {
                     sprite: Sprite {
                         color: get_tile_color(&row, &column),
@@ -96,13 +101,37 @@ fn setup(
                         texture: asset_server.load(&path),
                         transform: Transform {
                             translation: tile_position.extend(0.0),
-                            // scale: Vec3::new(TILE_SIZE.x, TILE_SIZE.y, 1.0),
                             ..default()
                         },
                         ..default()
                     });
             }
         }
+    }
+}
+
+fn print_mouse_events_system(
+    mut cursor_moved_events: EventReader<CursorMoved>,
+    q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>
+) {
+    for event in cursor_moved_events.iter() {
+        let (camera, camera_transform) = q_camera.single();
+
+        // get the size of the window
+        let window_size = Vec2::new(WINDOW_DIMENSION, WINDOW_DIMENSION);
+
+        // convert screen position [0..resolution] to ndc [-1..1] (gpu coordinates)
+        let ndc = (event.position / window_size) * 2.0 - Vec2::ONE;
+
+        // matrix for undoing the projection and camera transform
+        let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
+
+        // use it to convert ndc to world-space coordinates
+        let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
+
+        // reduce it to a 2D value
+        let world_pos: Vec2 = world_pos.truncate();
+        info!("{:?}", world_pos);
     }
 }
 
