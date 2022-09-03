@@ -1,7 +1,7 @@
 use bevy::prelude::Color;
 use bevy::ecs::component::Component;
 use bevy::prelude::Vec2;
-use crate::{HALF_TILE, Position, PositionLabel};
+use crate::{HALF_TILE, Piece, PieceType, Position, PositionLabel};
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
@@ -46,43 +46,43 @@ pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
     return (column_position, row + 1);
 }
 
-pub fn get_piece_name(current_position: Position) -> &'static str {
+pub fn get_piece_data(current_position: Position) -> (&'static str, PieceType) {
     let Position { position_label, .. } = current_position;
     let PositionLabel { row_label, col_label } = position_label;
 
     if row_label == 7 {
-        return "bP";
+        return ("bP", PieceType::PAWN);
     }
 
     if row_label == 2 {
-        return "wP";
+        return ("wP", PieceType::PAWN);
     }
 
     if row_label == 8 {
-        let name = match col_label {
-            ColLabel::A => "bR",
-            ColLabel::B => "bN",
-            ColLabel::C => "bB",
-            ColLabel::D => "bQ",
-            ColLabel::E => "bK",
-            ColLabel::F => "bB",
-            ColLabel::G => "bN",
-            ColLabel::H => "bR"
+        let data = match col_label {
+            ColLabel::A => ("bR", PieceType::ROOK),
+            ColLabel::B => ("bN", PieceType::KNIGHT),
+            ColLabel::C => ("bB", PieceType::BISHOP),
+            ColLabel::D => ("bQ", PieceType::QUEEN),
+            ColLabel::E => ("bK", PieceType::KING),
+            ColLabel::F => ("bB", PieceType::BISHOP),
+            ColLabel::G => ("bN", PieceType::KNIGHT),
+            ColLabel::H => ("bR", PieceType::ROOK)
         };
-        return name;
+        return data;
     }
 
-    let name = match col_label {
-        ColLabel::A => "wR",
-        ColLabel::B => "wN",
-        ColLabel::C => "wB",
-        ColLabel::D => "wQ",
-        ColLabel::E => "wK",
-        ColLabel::F => "wB",
-        ColLabel::G => "wN",
-        ColLabel::H => "wR"
+    let data = match col_label {
+        ColLabel::A => ("wR", PieceType::ROOK),
+        ColLabel::B => ("wN", PieceType::KNIGHT),
+        ColLabel::C => ("wB", PieceType::BISHOP),
+        ColLabel::D => ("wQ", PieceType::QUEEN),
+        ColLabel::E => ("wK", PieceType::KING),
+        ColLabel::F => ("wB", PieceType::BISHOP),
+        ColLabel::G => ("wN", PieceType::KNIGHT),
+        ColLabel::H => ("wR", PieceType::ROOK)
     };
-    return name;
+    return data;
 }
 
 pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
@@ -95,4 +95,15 @@ pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
         return true;
     }
     return false;
+}
+
+pub fn get_possible_moves_for_piece(piece: Piece) -> Vec<PositionLabel> {
+    return match piece.piece_type {
+        PieceType::PAWN => Vec::new(),
+        PieceType::BISHOP => Vec::new(),
+        PieceType::KNIGHT => Vec::new(),
+        PieceType::ROOK => Vec::new(),
+        PieceType::QUEEN => Vec::new(),
+        PieceType::KING => Vec::new(),
+    };
 }
