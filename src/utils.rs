@@ -1,12 +1,12 @@
 use bevy::prelude::Color;
 use bevy::ecs::component::Component;
 use bevy::prelude::Vec2;
-use crate::{HALF_TILE, Position};
+use crate::{HALF_TILE, Position, PositionLabel};
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
 
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ColLabel {
     A,
     B,
@@ -47,7 +47,8 @@ pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
 }
 
 pub fn get_piece_name(current_position: Position) -> &'static str {
-    let Position { row_label, col_label, .. } = current_position;
+    let Position { position_label, .. } = current_position;
+    let PositionLabel { row_label, col_label } = position_label;
 
     if row_label == 7 {
         return "bP";

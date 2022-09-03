@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::PresentMode};
+use std::collections::HashMap;
 use crate::utils::*;
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
@@ -47,12 +48,18 @@ struct Light {
 struct GameState {
     turn: Team,
     highlight_coords: Vec2,
+    selected_piece: String,
+}
+
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
+struct PositionLabel {
+    col_label: ColLabel,
+    row_label: u8,
 }
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct Position {
-    col_label: ColLabel,
-    row_label: u8,
+    position_label: PositionLabel,
     coordinates: Vec2,
 }
 
@@ -79,6 +86,7 @@ fn setup(
     commands.insert_resource(GameState {
         turn: Team::WHITE,
         highlight_coords: Vec2::ZERO,
+        selected_piece: String::new(),
     });
 
     commands.spawn_bundle(Camera2dBundle::default()).insert(MainCamera);
@@ -93,7 +101,7 @@ fn setup(
 
 
             let (col_label, row_label) = get_pos_label(row, &column);
-            let current_pos: Position = Position { col_label, row_label, coordinates: tile_position };
+            let current_pos: Position = Position { position_label: PositionLabel { col_label, row_label }, coordinates: tile_position };
             // println!("Current position: {:?}", current_pos);
             // println!("Tile position: {:?}", tile_position);
 
@@ -143,7 +151,8 @@ fn select_piece_system(
     if buttons.just_pressed(MouseButton::Left) {
         for piece in query.iter_mut() {
             let piece_coords = piece.position.coordinates;
-            if piece.team == game_state.turn && check_bounds(piece_coords.x, piece_coords.y, mouse_coords.coords) {
+            let in_bounds: bool = check_bounds(piece_coords.x, piece_coords.y, mouse_coords.coords);
+            if in_bounds && piece.team == game_state.turn && game_state.highlight_coords != piece_coords {
                 commands
                     .spawn()
                     .insert(Light { coordinates: piece_coords })
@@ -160,10 +169,15 @@ fn select_piece_system(
                         ..default()
                     });
                 game_state.highlight_coords = piece_coords;
+                game_state.selected_piece = String::from(&piece.name);
                 break;
             }
         }
     }
+}
+
+fn handle_move_system(query: Query<&Piece>, game_state: ResMut<GameState>) {
+
 }
 
 fn cleanup_select_system(query: Query<(Entity, &mut Light)>, mut commands: Commands, game_state: Res<GameState>) {
