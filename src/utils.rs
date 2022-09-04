@@ -1,21 +1,22 @@
 use bevy::prelude::Color;
 use bevy::ecs::component::Component;
 use bevy::prelude::Vec2;
-use crate::{HALF_TILE, Piece, PieceType, Position, PositionLabel};
+use std::collections::HashMap;
+use crate::{HALF_TILE, Piece, PieceType, Position, PositionLabel, Team};
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ColLabel {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H
+    A = 1,
+    B = 2,
+    C = 3,
+    D = 4,
+    E = 5,
+    F = 6,
+    G = 7,
+    H = 8
 }
 
 pub fn get_tile_color(row: &u8, column: &u8) -> Color {
@@ -97,13 +98,31 @@ pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
     return false;
 }
 
-pub fn get_possible_moves_for_piece(piece: Piece) -> Vec<PositionLabel> {
+pub fn get_possible_moves_for_piece(piece: &Piece, board: &HashMap<PositionLabel, Piece>) -> Vec<PositionLabel> {
     return match piece.piece_type {
-        PieceType::PAWN => Vec::new(),
+        PieceType::PAWN => possible_moves_for_pawn(piece, board),
         PieceType::BISHOP => Vec::new(),
         PieceType::KNIGHT => Vec::new(),
         PieceType::ROOK => Vec::new(),
         PieceType::QUEEN => Vec::new(),
         PieceType::KING => Vec::new(),
     };
+}
+
+fn possible_moves_for_pawn(piece: &Piece, board: &HashMap<PositionLabel, Piece>) -> Vec<PositionLabel> {
+    let mut result = Vec::new();
+    if piece.team == Team::WHITE {
+        let pos_label = piece.position.position_label;
+        // result.push(PositionLabel { col_label: pos_label.col_label, row_label: pos_label.row_label - 1 });
+        if piece.position.position_label.row_label == 2 {
+            println!("ROW TWO");
+            let forward_two = PositionLabel { col_label: pos_label.col_label, row_label: pos_label.row_label - 2 };
+            /*
+            if board.get(&forward_two) != None {
+                println!("CONTAINS KEY!");
+            }
+             */
+        }
+    }
+    return result;
 }

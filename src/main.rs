@@ -140,10 +140,10 @@ fn setup(
                 let (name, piece_type) = get_piece_data(current_pos);
                 let path = format!("../assets/pieces/{}.png", name);
                 let team: Team = if name.contains("w") { Team::WHITE } else { Team::BLACK };
-                game_state.board.insert(position_label, Piece { name: String::from(name), position: current_pos, team, piece_type });
+                game_state.board.insert(position_label, Piece { name: name.to_string(), position: current_pos, team, piece_type });
                 commands
                     .spawn()
-                    .insert(Piece { name: String::from(name), position: current_pos, team, piece_type })
+                    .insert(Piece { name: name.to_string(), position: current_pos, team, piece_type })
                     .insert_bundle(SpriteBundle {
                         texture: asset_server.load(&path),
                         transform: Transform {
@@ -202,7 +202,7 @@ fn handle_move_system(
     if buttons.just_pressed(MouseButton::Left) {
         for (entity, piece) in query.iter_mut() {
             if entity == game_state.selected_piece {
-                println!("{}", piece.name);
+                get_possible_moves_for_piece(&piece as &Piece, &game_state.board);
             }
         }
     }
