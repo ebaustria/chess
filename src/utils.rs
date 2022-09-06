@@ -1,23 +1,10 @@
 use bevy::prelude::Color;
 use bevy::ecs::component::Component;
 use bevy::prelude::Vec2;
-use std::collections::HashMap;
-use crate::{HALF_TILE, Piece, PieceType, Position, PositionLabel, Team};
+use crate::{ColLabel, HALF_TILE, Piece, PieceType, Position, PositionLabel, Team, Tile};
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
-
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ColLabel {
-    A = 1,
-    B = 2,
-    C = 3,
-    D = 4,
-    E = 5,
-    F = 6,
-    G = 7,
-    H = 8
-}
 
 pub fn get_tile_color(row: &u8, column: &u8) -> Color {
     if row % 2 == 0 {
@@ -47,41 +34,41 @@ pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
     return (column_position, row + 1);
 }
 
-pub fn get_piece_data(current_position: Position) -> (&'static str, PieceType) {
+pub fn get_piece_data(current_position: Position) -> (&'static str, Team, PieceType) {
     let Position { position_label, .. } = current_position;
     let PositionLabel { row_label, col_label } = position_label;
 
     if row_label == 7 {
-        return ("bP", PieceType::PAWN);
+        return ("bP", Team::BLACK, PieceType::PAWN);
     }
 
     if row_label == 2 {
-        return ("wP", PieceType::PAWN);
+        return ("wP", Team::WHITE, PieceType::PAWN);
     }
 
     if row_label == 8 {
         let data = match col_label {
-            ColLabel::A => ("bR", PieceType::ROOK),
-            ColLabel::B => ("bN", PieceType::KNIGHT),
-            ColLabel::C => ("bB", PieceType::BISHOP),
-            ColLabel::D => ("bQ", PieceType::QUEEN),
-            ColLabel::E => ("bK", PieceType::KING),
-            ColLabel::F => ("bB", PieceType::BISHOP),
-            ColLabel::G => ("bN", PieceType::KNIGHT),
-            ColLabel::H => ("bR", PieceType::ROOK)
+            ColLabel::A => ("bR", Team::BLACK, PieceType::ROOK),
+            ColLabel::B => ("bN", Team::BLACK, PieceType::KNIGHT),
+            ColLabel::C => ("bB", Team::BLACK, PieceType::BISHOP),
+            ColLabel::D => ("bQ", Team::BLACK, PieceType::QUEEN),
+            ColLabel::E => ("bK", Team::BLACK, PieceType::KING),
+            ColLabel::F => ("bB", Team::BLACK, PieceType::BISHOP),
+            ColLabel::G => ("bN", Team::BLACK, PieceType::KNIGHT),
+            ColLabel::H => ("bR", Team::BLACK, PieceType::ROOK)
         };
         return data;
     }
 
     let data = match col_label {
-        ColLabel::A => ("wR", PieceType::ROOK),
-        ColLabel::B => ("wN", PieceType::KNIGHT),
-        ColLabel::C => ("wB", PieceType::BISHOP),
-        ColLabel::D => ("wQ", PieceType::QUEEN),
-        ColLabel::E => ("wK", PieceType::KING),
-        ColLabel::F => ("wB", PieceType::BISHOP),
-        ColLabel::G => ("wN", PieceType::KNIGHT),
-        ColLabel::H => ("wR", PieceType::ROOK)
+        ColLabel::A => ("wR", Team::WHITE, PieceType::ROOK),
+        ColLabel::B => ("wN", Team::WHITE, PieceType::KNIGHT),
+        ColLabel::C => ("wB", Team::WHITE, PieceType::BISHOP),
+        ColLabel::D => ("wQ", Team::WHITE, PieceType::QUEEN),
+        ColLabel::E => ("wK", Team::WHITE, PieceType::KING),
+        ColLabel::F => ("wB", Team::WHITE, PieceType::BISHOP),
+        ColLabel::G => ("wN", Team::WHITE, PieceType::KNIGHT),
+        ColLabel::H => ("wR", Team::WHITE, PieceType::ROOK)
     };
     return data;
 }
@@ -98,7 +85,7 @@ pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
     return false;
 }
 
-pub fn get_possible_moves_for_piece(piece: &Piece, board: &HashMap<PositionLabel, Piece>) -> Vec<PositionLabel> {
+pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
     return match piece.piece_type {
         PieceType::PAWN => possible_moves_for_pawn(piece, board),
         PieceType::BISHOP => Vec::new(),
@@ -109,19 +96,27 @@ pub fn get_possible_moves_for_piece(piece: &Piece, board: &HashMap<PositionLabel
     };
 }
 
-fn possible_moves_for_pawn(piece: &Piece, board: &HashMap<PositionLabel, Piece>) -> Vec<PositionLabel> {
+fn possible_moves_for_pawn(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
     let mut result = Vec::new();
     if piece.team == Team::WHITE {
         let pos_label = piece.position.position_label;
-        // result.push(PositionLabel { col_label: pos_label.col_label, row_label: pos_label.row_label - 1 });
-        if piece.position.position_label.row_label == 2 {
-            println!("ROW TWO");
-            let forward_two = PositionLabel { col_label: pos_label.col_label, row_label: pos_label.row_label - 2 };
-            /*
-            if board.get(&forward_two) != None {
-                println!("CONTAINS KEY!");
+        if pos_label.row_label == 2 {
+            let row_label = pos_label.row_label + 1;
+            if board[row_label as usize][pos_label.col_label as usize].team == Team::NONE {
+                result.push(board[row_label as usize][pos_label.col_label as usize].position);
             }
-             */
+        }
+
+        if board[pos_label.row_label as usize][pos_label.col_label as usize].team == Team::NONE {
+            result.push(board[pos_label.row_label as usize][pos_label.col_label as usize].position);
+        }
+
+        if board[pos_label.row_label as usize][(pos_label.col_label as u8 + 1) as usize].team == Team::BLACK {
+            result.push(board[pos_label.row_label as usize][(pos_label.col_label as u8 + 1) as usize].position);
+        }
+
+        if board[pos_label.row_label as usize][(pos_label.col_label as u8 - 1) as usize].team == Team::BLACK {
+            result.push(board[pos_label.row_label as usize][(pos_label.col_label as u8 - 1) as usize].position);
         }
     }
     return result;
