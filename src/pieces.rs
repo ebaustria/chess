@@ -76,15 +76,39 @@ fn possible_moves_for_pawn(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
             result.push(board[row][col].position);
         }
 
-        if col < 7 && board[row][col + 1].team == Team::BLACK {
-            result.push(board[row][col + 1].position);
-        }
-
-        if col > 0 && board[row][col - 1].team == Team::BLACK {
-            result.push(board[row][col - 1].position);
-        }
+        attack_moves_for_pawn(board, row, col, Team::BLACK, &mut result);
         return result;
     }
-    // TODO Handle move for black pawn.
+
+    // Get moves for black pawns
+    if row == 7 {
+        let row_label = row - 3;
+        if board[row_label][col].team == Team::NONE {
+            result.push(board[row_label][col].position);
+        }
+    }
+
+    let row_label = row - 2;
+    if board[row_label][col].team == Team::NONE {
+        result.push(board[row_label][col].position);
+    }
+
+    attack_moves_for_pawn(board, row_label, col, Team::WHITE, &mut result);
     return result;
+}
+
+fn attack_moves_for_pawn(
+    board: &[[Tile; 8]; 8],
+    row: usize,
+    col: usize,
+    team: Team,
+    result: &mut Vec<Position>
+) {
+    if col < 7 && board[row][col + 1].team == team {
+        result.push(board[row][col + 1].position);
+    }
+
+    if col > 0 && board[row][col - 1].team == team {
+        result.push(board[row][col - 1].position);
+    }
 }

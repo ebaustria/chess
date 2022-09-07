@@ -55,7 +55,7 @@ struct GameState {
     board: [[Tile; 8]; 8],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Tile {
     team: Team,
     position: Position,
