@@ -19,6 +19,10 @@ pub fn get_tile_color(row: &u8, column: &u8) -> Color {
     return TILE_DARK;
 }
 
+pub fn index_for_pos(pos_label: PositionLabel) -> (usize, usize) {
+    return ((pos_label.row_label - 1 ) as usize, pos_label.col_label as usize);
+}
+
 pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
     let column_position: ColLabel = match column {
         0 => ColLabel::A,
@@ -118,6 +122,8 @@ fn possible_moves_for_pawn(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
         if board[pos_label.row_label as usize][(pos_label.col_label as u8 - 1) as usize].team == Team::BLACK {
             result.push(board[pos_label.row_label as usize][(pos_label.col_label as u8 - 1) as usize].position);
         }
+        return result;
     }
+    // TODO Handle move for black pawn.
     return result;
 }
