@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PresentMode};
-use std::collections::HashMap;
-use crate::utils::*;
+use crate::board::{ check_bounds, ColLabel, get_pos_label, get_tile_color, index_for_pos, Position, PositionLabel };
+use crate::pieces::{ get_piece_data, get_possible_moves_for_piece, PieceType };
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
 const HALF_TILE: f32 = TILE_SIZE.x / 2.;
@@ -8,7 +8,8 @@ const WINDOW_DIMENSION: f32 = 640.0;
 const NUM_ROWS: u8 = 8;
 const NUM_COLUMNS: u8 = 8;
 
-pub mod utils;
+pub mod pieces;
+mod board;
 
 fn main() {
     App::new()
@@ -36,40 +37,6 @@ pub enum Team {
     WHITE,
     BLACK,
     NONE,
-}
-
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub struct PositionLabel {
-    col_label: ColLabel,
-    row_label: u8,
-}
-
-#[derive(Component, Debug, Clone, Copy)]
-pub struct Position {
-    position_label: PositionLabel,
-    coordinates: Vec2,
-}
-
-#[derive(Component, Debug, Clone, Copy, Eq, PartialEq)]
-pub enum ColLabel {
-    A = 0,
-    B = 1,
-    C = 2,
-    D = 3,
-    E = 4,
-    F = 5,
-    G = 6,
-    H = 7
-}
-
-#[derive(PartialEq, Copy, Clone)]
-pub enum PieceType {
-    PAWN,
-    BISHOP,
-    KNIGHT,
-    ROOK,
-    QUEEN,
-    KING
 }
 
 struct Mouse {
