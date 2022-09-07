@@ -62,25 +62,26 @@ pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Ve
 
 fn possible_moves_for_pawn(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
     let mut result = Vec::new();
+    let col = piece.position.position_label.col_label as usize;
+    let row = piece.position.position_label.row_label as usize;
     if piece.team == Team::WHITE {
-        let pos_label = piece.position.position_label;
-        if pos_label.row_label == 2 {
-            let row_label = pos_label.row_label + 1;
-            if board[row_label as usize][pos_label.col_label as usize].team == Team::NONE {
-                result.push(board[row_label as usize][pos_label.col_label as usize].position);
+        if row == 2 {
+            let row_label = row + 1;
+            if board[row_label][col].team == Team::NONE {
+                result.push(board[row_label][col].position);
             }
         }
 
-        if board[pos_label.row_label as usize][pos_label.col_label as usize].team == Team::NONE {
-            result.push(board[pos_label.row_label as usize][pos_label.col_label as usize].position);
+        if board[row][col].team == Team::NONE {
+            result.push(board[row][col].position);
         }
 
-        if board[pos_label.row_label as usize][(pos_label.col_label as u8 + 1) as usize].team == Team::BLACK {
-            result.push(board[pos_label.row_label as usize][(pos_label.col_label as u8 + 1) as usize].position);
+        if col < 7 && board[row][col + 1].team == Team::BLACK {
+            result.push(board[row][col + 1].position);
         }
 
-        if board[pos_label.row_label as usize][(pos_label.col_label as u8 - 1) as usize].team == Team::BLACK {
-            result.push(board[pos_label.row_label as usize][(pos_label.col_label as u8 - 1) as usize].position);
+        if col > 0 && board[row][col - 1].team == Team::BLACK {
+            result.push(board[row][col - 1].position);
         }
         return result;
     }
