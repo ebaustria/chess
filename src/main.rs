@@ -61,7 +61,7 @@ pub struct Tile {
     position: Position,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Piece {
     name: String,
     position: Position,
