@@ -55,9 +55,25 @@ pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Ve
         PieceType::BISHOP => possible_moves_for_bishop(piece, board),
         PieceType::KNIGHT => Vec::new(),
         PieceType::ROOK => possible_moves_for_rook(piece, board),
-        PieceType::QUEEN => Vec::new(),
+        PieceType::QUEEN => possible_moves_for_queen(piece, board),
         PieceType::KING => Vec::new(),
     };
+}
+
+fn possible_moves_for_queen(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+    let mut result = Vec::new();
+    let radius: i8 = 1;
+
+    upper_vertical_moves(piece, board, radius as u8, &mut result);
+    lower_vertical_moves(piece, board, radius, &mut result);
+    left_horizontal_moves(piece, board, radius, &mut result);
+    right_horizontal_moves(piece, board, radius as u8, &mut result);
+    upper_left_diagonal_moves(piece, board, radius, &mut result);
+    upper_right_diagonal_moves(piece, board, radius as u8, &mut result);
+    lower_left_diagonal_moves(piece, board, radius, &mut result);
+    lower_right_diagonal_moves(piece, board, radius, &mut result);
+
+    return result;
 }
 
 fn possible_moves_for_rook(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
