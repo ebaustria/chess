@@ -56,8 +56,76 @@ pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Ve
         PieceType::KNIGHT => Vec::new(),
         PieceType::ROOK => possible_moves_for_rook(piece, board),
         PieceType::QUEEN => possible_moves_for_queen(piece, board),
-        PieceType::KING => Vec::new(),
+        PieceType::KING => possible_moves_for_king(piece, board),
     };
+}
+
+fn possible_moves_for_king(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+    let mut result = Vec::new();
+    let col = piece.position.position_label.col_label as i8;
+    let row = (piece.position.position_label.row_label - 1) as i8;
+
+    let row_upper = (row + 1) as usize;
+    let row_lower: i8 = row - 1;
+    let col_left: i8 = col - 1;
+    let col_right = (col + 1) as usize;
+
+    // check above
+    if row_upper < 8 {
+        let tile: Tile = board[row_upper][col as usize];
+        if tile.team != piece.team {
+            result.push(tile.position);
+        }
+
+        check_left_for_king(board, row_upper, col_left, piece.team, &mut result);
+        check_right_for_king(board, row_upper, col_right, piece.team, &mut result);
+    }
+
+    // check below
+    if row_lower > -1 {
+        let tile: Tile = board[row_lower as usize][col as usize];
+        if tile.team != piece.team {
+            result.push(tile.position);
+        }
+
+        check_left_for_king(board, row_lower as usize, col_left, piece.team, &mut result);
+        check_right_for_king(board, row_lower as usize, col_right, piece.team, &mut result);
+    }
+
+    check_left_for_king(board, row as usize, col_left, piece.team, &mut result);
+    check_right_for_king(board, row as usize, col_right, piece.team, &mut result);
+
+    return result;
+}
+
+fn check_left_for_king(
+    board: &[[Tile; 8]; 8],
+    row: usize,
+    col_left: i8,
+    team: Team,
+    result: &mut Vec<Position>
+) {
+    if col_left > -1 {
+        let tile: Tile = board[row][col_left as usize];
+        if tile.team != team {
+            result.push(tile.position);
+        }
+    }
+}
+
+fn check_right_for_king(
+    board: &[[Tile; 8]; 8],
+    row: usize,
+    col_right: usize,
+    team: Team,
+    result: &mut Vec<Position>
+) {
+    if col_right < 8 {
+        let tile: Tile = board[row][col_right];
+        if tile.team != team {
+            result.push(tile.position);
+        }
+    }
 }
 
 fn possible_moves_for_queen(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {

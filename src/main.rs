@@ -58,6 +58,7 @@ struct GameState {
 #[derive(Copy, Clone, Debug)]
 pub struct Tile {
     team: Team,
+    // piece_type
     position: Position,
 }
 
@@ -197,36 +198,32 @@ fn handle_move_system(
     buttons: Res<Input<MouseButton>>,
     mouse_coords: Res<Mouse>,
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Piece, &mut Transform)>,
+    mut query: Query<(&mut Piece, &mut Transform)>,
     mut game_state: ResMut<GameState>
 ) {
-    if buttons.just_pressed(MouseButton::Left) {
-        for (entity, mut piece, mut transform) in query.iter_mut() {
-            if entity == game_state.selected_piece {
-                for position in &piece.available_moves {
-                    if check_bounds(position.coordinates.x, position.coordinates.y, mouse_coords.coords) {
-                        let delta: Vec2 = Vec2::new(position.coordinates.x - piece.position.coordinates.x, position.coordinates.y - piece.position.coordinates.y);
-                        transform.translation.x += delta.x;
-                        transform.translation.y += delta.y;
+    if !buttons.just_pressed(MouseButton::Left) {
+        return;
+    }
 
-                        let (old_row, old_col) = index_for_pos(piece.position.position_label);
-                        let (new_row, new_col) = index_for_pos(position.position_label);
+    if let Ok((mut piece, mut transform)) = query.get_mut(game_state.selected_piece) {
+        for position in &piece.available_moves {
+            if check_bounds(position.coordinates.x, position.coordinates.y, mouse_coords.coords) {
+                let delta: Vec2 = Vec2::new(position.coordinates.x - piece.position.coordinates.x, position.coordinates.y - piece.position.coordinates.y);
+                transform.translation.x += delta.x;
+                transform.translation.y += delta.y;
 
-                        game_state.board[old_row][old_col] = Tile { team: Team::NONE, position: piece.position };
-                        game_state.board[new_row][new_col] = Tile { team: piece.team, position: *position };
-                        game_state.highlight_coords = Vec2::ZERO;
-                        game_state.selected_piece = commands.spawn().id();
-                        game_state.turn = if game_state.turn == Team::WHITE { Team::BLACK } else { Team::WHITE };
+                let (old_row, old_col) = index_for_pos(piece.position.position_label);
+                let (new_row, new_col) = index_for_pos(position.position_label);
 
-                        piece.position = *position;
-                        piece.available_moves = Vec::new();
-                        // println!("{:?}", &game_state.available_moves.len());
-                        // println!("piece: {:?}", piece.position.coordinates);
-                        // println!("goal: {:?}", position.coordinates);
-                        // println!("delta: {:?}", delta);
-                        break;
-                    }
-                }
+                game_state.board[old_row][old_col] = Tile { team: Team::NONE, position: piece.position };
+                game_state.board[new_row][new_col] = Tile { team: piece.team, position: *position };
+                game_state.highlight_coords = Vec2::ZERO;
+                game_state.selected_piece = commands.spawn().id();
+                game_state.turn = if game_state.turn == Team::WHITE { Team::BLACK } else { Team::WHITE };
+
+                piece.position = *position;
+                piece.available_moves = Vec::new();
+                break;
             }
         }
     }
