@@ -54,10 +54,22 @@ pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Ve
         PieceType::PAWN => possible_moves_for_pawn(piece, board),
         PieceType::BISHOP => possible_moves_for_bishop(piece, board),
         PieceType::KNIGHT => Vec::new(),
-        PieceType::ROOK => Vec::new(),
+        PieceType::ROOK => possible_moves_for_rook(piece, board),
         PieceType::QUEEN => Vec::new(),
         PieceType::KING => Vec::new(),
     };
+}
+
+fn possible_moves_for_rook(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+    let mut result = Vec::new();
+    let radius: i8 = 1;
+
+    upper_vertical_moves(piece, board, radius as u8, &mut result);
+    lower_vertical_moves(piece, board, radius, &mut result);
+    left_horizontal_moves(piece, board, radius, &mut result);
+    right_horizontal_moves(piece, board, radius as u8, &mut result);
+
+    return result;
 }
 
 fn possible_moves_for_bishop(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
@@ -70,6 +82,66 @@ fn possible_moves_for_bishop(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Posit
     lower_right_diagonal_moves(piece, board, radius, &mut result);
 
     return result;
+}
+
+fn lower_vertical_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, positions: &mut Vec<Position>) {
+    let col = piece.position.position_label.col_label as usize;
+    let row_check = piece.position.position_label.row_label as i8 - 1 - radius;
+
+    if row_check > -1 && board[row_check as usize][col].team != piece.team {
+        let tile: Tile = board[row_check as usize][col];
+        if tile.team != Team::NONE {
+            positions.push(tile.position);
+            return;
+        }
+        positions.push(tile.position);
+        lower_vertical_moves(piece, board, radius + 1, positions);
+    }
+}
+
+fn upper_vertical_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8, positions: &mut Vec<Position>) {
+    let col = piece.position.position_label.col_label as usize;
+    let row_check = (piece.position.position_label.row_label - 1 + radius) as usize;
+
+    if row_check < 8 && board[row_check][col].team != piece.team {
+        let tile: Tile = board[row_check][col];
+        if tile.team != Team::NONE {
+            positions.push(tile.position);
+            return;
+        }
+        positions.push(tile.position);
+        upper_vertical_moves(piece, board, radius + 1, positions);
+    }
+}
+
+fn right_horizontal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8, positions: &mut Vec<Position>) {
+    let col_check = (piece.position.position_label.col_label as u8 + radius) as usize;
+    let row = (piece.position.position_label.row_label - 1) as usize;
+
+    if col_check < 8 && board[row][col_check].team != piece.team {
+        let tile: Tile = board[row][col_check];
+        if tile.team != Team::NONE {
+            positions.push(tile.position);
+            return;
+        }
+        positions.push(tile.position);
+        right_horizontal_moves(piece, board, radius + 1, positions);
+    }
+}
+
+fn left_horizontal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, positions: &mut Vec<Position>) {
+    let col_check: i8 = piece.position.position_label.col_label as i8 - radius;
+    let row = (piece.position.position_label.row_label - 1) as usize;
+
+    if col_check > -1 && board[row][col_check as usize].team != piece.team {
+        let tile: Tile = board[row][col_check as usize];
+        if tile.team != Team::NONE {
+            positions.push(tile.position);
+            return;
+        }
+        positions.push(tile.position);
+        left_horizontal_moves(piece, board, radius + 1, positions);
+    }
 }
 
 fn lower_right_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, positions: &mut Vec<Position>) {
