@@ -174,6 +174,7 @@ fn select_piece_system(
 fn handle_move_system(
     buttons: Res<Input<MouseButton>>,
     mouse_coords: Res<Mouse>,
+    mut commands: Commands,
     mut query: Query<(Entity, &mut Piece, &mut Transform)>,
     mut game_state: ResMut<GameState>
 ) {
@@ -190,9 +191,19 @@ fn handle_move_system(
 
                 let (old_row, old_col) = index_for_pos(piece.position.position_label);
                 let (new_row, new_col) = index_for_pos(position.position_label);
+                let new_tile: &mut Tile = &mut game_state.board[new_row][new_col];
 
-                game_state.board[old_row][old_col] = Tile { team: Team::NONE, position: piece.position, piece: None };
-                game_state.board[new_row][new_col] = Tile { team: piece.team, position: *position, piece: Option::from(entity), };
+                // capture piece if tile contains enemy
+                if new_tile.piece.is_some() {
+                    commands.entity(new_tile.piece.unwrap()).despawn();
+                }
+
+                new_tile.team = piece.team;
+                new_tile.piece = Option::from(entity);
+
+                game_state.board[old_row][old_col].team = Team::NONE;
+                game_state.board[old_row][old_col].piece = None;
+
                 game_state.highlight_coords = Vec2::ZERO;
                 game_state.selected_piece = None;
                 game_state.turn = if game_state.turn == Team::WHITE { Team::BLACK } else { Team::WHITE };
