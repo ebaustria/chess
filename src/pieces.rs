@@ -53,11 +53,72 @@ pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Ve
     return match piece.piece_type {
         PieceType::PAWN => possible_moves_for_pawn(piece, board),
         PieceType::BISHOP => possible_moves_for_bishop(piece, board),
-        PieceType::KNIGHT => Vec::new(),
+        PieceType::KNIGHT => possible_moves_for_knight(piece, board),
         PieceType::ROOK => possible_moves_for_rook(piece, board),
         PieceType::QUEEN => possible_moves_for_queen(piece, board),
         PieceType::KING => possible_moves_for_king(piece, board),
     };
+}
+
+fn possible_moves_for_knight(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+    let mut result = Vec::new();
+    let col = piece.position.position_label.col_label as i8;
+    let row = (piece.position.position_label.row_label - 1) as i8;
+
+    let up_big = (row + 2) as usize;
+    let down_big: i8 = row - 2;
+    let left_big: i8 = col - 2;
+    let right_big = (col + 2) as usize;
+
+    let left_small: i8 = col - 1;
+    let right_small = (col + 1) as usize;
+    let up_small = (row + 1) as usize;
+    let down_small = row - 1;
+
+    if up_big < 8 {
+        if left_small > -1 {
+            add_position(piece.team, board[up_big][left_small as usize], &mut result);
+        }
+        if right_small < 8 {
+            add_position(piece.team, board[up_big][right_small as usize], &mut result);
+        }
+    }
+
+    if down_big > -1 {
+        if left_small > -1 {
+            add_position(piece.team, board[down_big as usize][left_small as usize], &mut result);
+        }
+        if right_small < 8 {
+            add_position(piece.team, board[down_big as usize][right_small], &mut result);
+        }
+    }
+
+    if left_big > -1 {
+        if up_small < 8 {
+            add_position(piece.team, board[up_small][left_big as usize], &mut result);
+        }
+        if down_small > -1 {
+            add_position(piece.team, board[down_small as usize][left_big as usize], &mut result);
+        }
+    }
+
+    if right_big < 8 {
+        if up_small < 8 {
+            add_position(piece.team, board[up_small][right_big], &mut result);
+        }
+
+        if down_small > -1 {
+            add_position(piece.team, board[down_small as usize][right_big], &mut result);
+        }
+    }
+
+    return result;
+}
+
+fn add_position(team: Team, tile: Tile, result: &mut Vec<Position>) {
+    if tile.team != team {
+        result.push(tile.position);
+    }
 }
 
 fn possible_moves_for_king(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
@@ -72,22 +133,14 @@ fn possible_moves_for_king(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
 
     // check above
     if row_upper < 8 {
-        let tile: Tile = board[row_upper][col as usize];
-        if tile.team != piece.team {
-            result.push(tile.position);
-        }
-
+        add_position(piece.team, board[row_upper][col as usize], &mut result);
         check_left_for_king(board, row_upper, col_left, piece.team, &mut result);
         check_right_for_king(board, row_upper, col_right, piece.team, &mut result);
     }
 
     // check below
     if row_lower > -1 {
-        let tile: Tile = board[row_lower as usize][col as usize];
-        if tile.team != piece.team {
-            result.push(tile.position);
-        }
-
+        add_position(piece.team, board[row_lower as usize][col as usize], &mut result);
         check_left_for_king(board, row_lower as usize, col_left, piece.team, &mut result);
         check_right_for_king(board, row_lower as usize, col_right, piece.team, &mut result);
     }
@@ -106,10 +159,7 @@ fn check_left_for_king(
     result: &mut Vec<Position>
 ) {
     if col_left > -1 {
-        let tile: Tile = board[row][col_left as usize];
-        if tile.team != team {
-            result.push(tile.position);
-        }
+        add_position(team, board[row][col_left as usize], result);
     }
 }
 
@@ -121,10 +171,7 @@ fn check_right_for_king(
     result: &mut Vec<Position>
 ) {
     if col_right < 8 {
-        let tile: Tile = board[row][col_right];
-        if tile.team != team {
-            result.push(tile.position);
-        }
+        add_position(team, board[row][col_right], result);
     }
 }
 
