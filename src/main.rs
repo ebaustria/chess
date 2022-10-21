@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PresentMode};
 use crate::board::{ check_bounds, ColLabel, get_pos_label, get_tile_color, index_for_pos, Position, PositionLabel };
-use crate::pieces::{ get_piece_data, get_possible_moves_for_piece, PieceType };
+use crate::pieces::{ init_piece_data, get_possible_moves_for_piece, PieceType };
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
 const HALF_TILE: f32 = TILE_SIZE.x / 2.;
@@ -129,7 +129,7 @@ fn setup(
                 });
 
             if row > 5 || row < 2 {
-                let (name, team, piece_type) = get_piece_data(current_pos);
+                let (name, team, piece_type) = init_piece_data(current_pos);
                 let path = format!("../assets/pieces/{}.png", name);
                 game_state.board[row as usize][column as usize] = Tile { position: current_pos, team, };
                 commands

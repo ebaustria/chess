@@ -10,7 +10,7 @@ pub enum PieceType {
     KING
 }
 
-pub fn get_piece_data(current_position: Position) -> (&'static str, Team, PieceType) {
+pub fn init_piece_data(current_position: Position) -> (&'static str, Team, PieceType) {
     let Position { position_label, .. } = current_position;
     let PositionLabel { row_label, col_label } = position_label;
 
@@ -76,47 +76,30 @@ fn possible_moves_for_knight(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Posit
     let down_small = row - 1;
 
     if up_big < 8 {
-        if left_small > -1 {
-            add_position(piece.team, board[up_big][left_small as usize], &mut result);
-        }
-        if right_small < 8 {
-            add_position(piece.team, board[up_big][right_small as usize], &mut result);
-        }
+        add_position(piece.team, board[up_big][left_small as usize], left_small > -1, &mut result);
+        add_position(piece.team, board[up_big][right_small as usize], right_small < 8, &mut result);
     }
 
     if down_big > -1 {
-        if left_small > -1 {
-            add_position(piece.team, board[down_big as usize][left_small as usize], &mut result);
-        }
-        if right_small < 8 {
-            add_position(piece.team, board[down_big as usize][right_small], &mut result);
-        }
+        add_position(piece.team, board[down_big as usize][left_small as usize], left_small > -1, &mut result);
+        add_position(piece.team, board[down_big as usize][right_small], right_small < 8, &mut result);
     }
 
     if left_big > -1 {
-        if up_small < 8 {
-            add_position(piece.team, board[up_small][left_big as usize], &mut result);
-        }
-        if down_small > -1 {
-            add_position(piece.team, board[down_small as usize][left_big as usize], &mut result);
-        }
+        add_position(piece.team, board[up_small][left_big as usize], up_small < 8, &mut result);
+        add_position(piece.team, board[down_small as usize][left_big as usize], down_small > -1, &mut result);
     }
 
     if right_big < 8 {
-        if up_small < 8 {
-            add_position(piece.team, board[up_small][right_big], &mut result);
-        }
-
-        if down_small > -1 {
-            add_position(piece.team, board[down_small as usize][right_big], &mut result);
-        }
+        add_position(piece.team, board[up_small][right_big], up_small < 8, &mut result);
+        add_position(piece.team, board[down_small as usize][right_big], down_small > -1, &mut result);
     }
 
     return result;
 }
 
-fn add_position(team: Team, tile: Tile, result: &mut Vec<Position>) {
-    if tile.team != team {
+fn add_position(team: Team, tile: Tile, condition: bool, result: &mut Vec<Position>) {
+    if tile.team != team && condition {
         result.push(tile.position);
     }
 }
@@ -133,46 +116,22 @@ fn possible_moves_for_king(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
 
     // check above
     if row_upper < 8 {
-        add_position(piece.team, board[row_upper][col as usize], &mut result);
-        check_left_for_king(board, row_upper, col_left, piece.team, &mut result);
-        check_right_for_king(board, row_upper, col_right, piece.team, &mut result);
+        add_position(piece.team, board[row_upper][col as usize], true, &mut result);
+        add_position(piece.team, board[row_upper][col_left as usize], col_left > -1, &mut result);
+        add_position(piece.team, board[row_upper][col_right], col_right < 8, &mut result);
     }
 
     // check below
     if row_lower > -1 {
-        add_position(piece.team, board[row_lower as usize][col as usize], &mut result);
-        check_left_for_king(board, row_lower as usize, col_left, piece.team, &mut result);
-        check_right_for_king(board, row_lower as usize, col_right, piece.team, &mut result);
+        add_position(piece.team, board[row_lower as usize][col as usize], true, &mut result);
+        add_position(piece.team, board[row_lower as usize][col_left as usize], col_left > -1, &mut result);
+        add_position(piece.team, board[row_lower as usize][col_right], col_right < 8, &mut result);
     }
 
-    check_left_for_king(board, row as usize, col_left, piece.team, &mut result);
-    check_right_for_king(board, row as usize, col_right, piece.team, &mut result);
+    add_position(piece.team, board[row as usize][col_left as usize], col_left > -1, &mut result);
+    add_position(piece.team, board[row as usize][col_right], col_right < 8, &mut result);
 
     return result;
-}
-
-fn check_left_for_king(
-    board: &[[Tile; 8]; 8],
-    row: usize,
-    col_left: i8,
-    team: Team,
-    result: &mut Vec<Position>
-) {
-    if col_left > -1 {
-        add_position(team, board[row][col_left as usize], result);
-    }
-}
-
-fn check_right_for_king(
-    board: &[[Tile; 8]; 8],
-    row: usize,
-    col_right: usize,
-    team: Team,
-    result: &mut Vec<Position>
-) {
-    if col_right < 8 {
-        add_position(team, board[row][col_right], result);
-    }
 }
 
 fn possible_moves_for_queen(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
