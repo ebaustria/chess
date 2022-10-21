@@ -1,9 +1,16 @@
 use bevy::prelude::{ Color, Vec2 };
 use bevy::ecs::component::Component;
-use crate::{ HALF_TILE };
+use crate::{Entity, HALF_TILE, Piece, Team};
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
+
+#[derive(Debug)]
+pub struct Tile {
+    pub(crate) team: Team,
+    pub(crate) position: Position,
+    pub(crate) piece: Option<Entity>,
+}
 
 #[derive(Component, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ColLabel {
@@ -27,6 +34,25 @@ pub struct PositionLabel {
 pub struct Position {
     pub(crate) position_label: PositionLabel,
     pub(crate) coordinates: Vec2,
+}
+
+fn init_tile() -> Tile {
+    return Tile {
+        team: Team::NONE,
+        position: Position {
+            position_label: PositionLabel { col_label: ColLabel::A, row_label: 1 },
+            coordinates: Vec2::ZERO
+        },
+        piece: None,
+    };
+}
+
+pub fn init_board() -> [[Tile; 8]; 8] {
+    return [
+        [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()),
+        [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()),
+        [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile())
+    ];
 }
 
 pub fn get_tile_color(row: &u8, column: &u8) -> Color {

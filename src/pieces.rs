@@ -1,4 +1,5 @@
-use crate::{ ColLabel, Piece, Position, PositionLabel, Team, Tile };
+use crate::{ColLabel, Piece, Position, PositionLabel, Tile};
+use bevy::ecs::component::Component;
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum PieceType {
@@ -8,6 +9,13 @@ pub enum PieceType {
     ROOK,
     QUEEN,
     KING
+}
+
+#[derive(Component, Debug, PartialEq, Copy, Clone)]
+pub enum Team {
+    WHITE,
+    BLACK,
+    NONE,
 }
 
 pub fn init_piece_data(current_position: Position) -> (&'static str, Team, PieceType) {
@@ -76,29 +84,29 @@ fn possible_moves_for_knight(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Posit
     let down_small = row - 1;
 
     if up_big < 8 {
-        add_position(piece.team, board[up_big][left_small as usize], left_small > -1, &mut result);
-        add_position(piece.team, board[up_big][right_small as usize], right_small < 8, &mut result);
+        add_position(piece.team, &board[up_big][left_small as usize], left_small > -1, &mut result);
+        add_position(piece.team, &board[up_big][right_small as usize], right_small < 8, &mut result);
     }
 
     if down_big > -1 {
-        add_position(piece.team, board[down_big as usize][left_small as usize], left_small > -1, &mut result);
-        add_position(piece.team, board[down_big as usize][right_small], right_small < 8, &mut result);
+        add_position(piece.team, &board[down_big as usize][left_small as usize], left_small > -1, &mut result);
+        add_position(piece.team, &board[down_big as usize][right_small], right_small < 8, &mut result);
     }
 
     if left_big > -1 {
-        add_position(piece.team, board[up_small][left_big as usize], up_small < 8, &mut result);
-        add_position(piece.team, board[down_small as usize][left_big as usize], down_small > -1, &mut result);
+        add_position(piece.team, &board[up_small][left_big as usize], up_small < 8, &mut result);
+        add_position(piece.team, &board[down_small as usize][left_big as usize], down_small > -1, &mut result);
     }
 
     if right_big < 8 {
-        add_position(piece.team, board[up_small][right_big], up_small < 8, &mut result);
-        add_position(piece.team, board[down_small as usize][right_big], down_small > -1, &mut result);
+        add_position(piece.team, &board[up_small][right_big], up_small < 8, &mut result);
+        add_position(piece.team, &board[down_small as usize][right_big], down_small > -1, &mut result);
     }
 
     return result;
 }
 
-fn add_position(team: Team, tile: Tile, condition: bool, result: &mut Vec<Position>) {
+fn add_position(team: Team, tile: &Tile, condition: bool, result: &mut Vec<Position>) {
     if tile.team != team && condition {
         result.push(tile.position);
     }
@@ -116,20 +124,20 @@ fn possible_moves_for_king(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
 
     // check above
     if row_upper < 8 {
-        add_position(piece.team, board[row_upper][col as usize], true, &mut result);
-        add_position(piece.team, board[row_upper][col_left as usize], col_left > -1, &mut result);
-        add_position(piece.team, board[row_upper][col_right], col_right < 8, &mut result);
+        add_position(piece.team, &board[row_upper][col as usize], true, &mut result);
+        add_position(piece.team, &board[row_upper][col_left as usize], col_left > -1, &mut result);
+        add_position(piece.team, &board[row_upper][col_right], col_right < 8, &mut result);
     }
 
     // check below
     if row_lower > -1 {
-        add_position(piece.team, board[row_lower as usize][col as usize], true, &mut result);
-        add_position(piece.team, board[row_lower as usize][col_left as usize], col_left > -1, &mut result);
-        add_position(piece.team, board[row_lower as usize][col_right], col_right < 8, &mut result);
+        add_position(piece.team, &board[row_lower as usize][col as usize], true, &mut result);
+        add_position(piece.team, &board[row_lower as usize][col_left as usize], col_left > -1, &mut result);
+        add_position(piece.team, &board[row_lower as usize][col_right], col_right < 8, &mut result);
     }
 
-    add_position(piece.team, board[row as usize][col_left as usize], col_left > -1, &mut result);
-    add_position(piece.team, board[row as usize][col_right], col_right < 8, &mut result);
+    add_position(piece.team, &board[row as usize][col_left as usize], col_left > -1, &mut result);
+    add_position(piece.team, &board[row as usize][col_right], col_right < 8, &mut result);
 
     return result;
 }
@@ -179,7 +187,7 @@ fn lower_vertical_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, posit
     let row_check = piece.position.position_label.row_label as i8 - 1 - radius;
 
     if row_check > -1 && board[row_check as usize][col].team != piece.team {
-        let tile: Tile = board[row_check as usize][col];
+        let tile: &Tile = &board[row_check as usize][col];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;
@@ -194,7 +202,7 @@ fn upper_vertical_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8, posit
     let row_check = (piece.position.position_label.row_label - 1 + radius) as usize;
 
     if row_check < 8 && board[row_check][col].team != piece.team {
-        let tile: Tile = board[row_check][col];
+        let tile: &Tile = &board[row_check][col];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;
@@ -209,7 +217,7 @@ fn right_horizontal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8, pos
     let row = (piece.position.position_label.row_label - 1) as usize;
 
     if col_check < 8 && board[row][col_check].team != piece.team {
-        let tile: Tile = board[row][col_check];
+        let tile: &Tile = &board[row][col_check];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;
@@ -224,7 +232,7 @@ fn left_horizontal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, posi
     let row = (piece.position.position_label.row_label - 1) as usize;
 
     if col_check > -1 && board[row][col_check as usize].team != piece.team {
-        let tile: Tile = board[row][col_check as usize];
+        let tile: &Tile = &board[row][col_check as usize];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;
@@ -239,7 +247,7 @@ fn lower_right_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8,
     let col_check = (piece.position.position_label.col_label as i8 + radius) as usize;
 
     if row_check > -1 && col_check < 8 && board[row_check as usize][col_check].team != piece.team {
-        let tile: Tile = board[row_check as usize][col_check];
+        let tile: &Tile = &board[row_check as usize][col_check];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;
@@ -254,7 +262,7 @@ fn lower_left_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, 
     let col_check: i8 = piece.position.position_label.col_label as i8 - radius;
 
     if row_check > -1 && col_check > -1 && board[row_check as usize][col_check as usize].team != piece.team {
-        let tile: Tile = board[row_check as usize][col_check as usize];
+        let tile: &Tile = &board[row_check as usize][col_check as usize];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;
@@ -269,7 +277,7 @@ fn upper_right_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8,
     let col_check = (piece.position.position_label.col_label as u8 + radius) as usize;
 
     if row_check < 8 && col_check < 8 && board[row_check][col_check].team != piece.team {
-        let tile: Tile = board[row_check][col_check];
+        let tile: &Tile = &board[row_check][col_check];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;
@@ -284,7 +292,7 @@ fn upper_left_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, 
     let col_check: i8 = piece.position.position_label.col_label as i8 - radius;
 
     if row_check < 8 && col_check > -1 && board[row_check][col_check as usize].team != piece.team {
-        let tile: Tile = board[row_check][col_check as usize];
+        let tile: &Tile = &board[row_check][col_check as usize];
         if tile.team != Team::NONE {
             positions.push(tile.position);
             return;

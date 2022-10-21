@@ -1,12 +1,21 @@
 use bevy::{prelude::*, window::PresentMode};
-use crate::board::{ check_bounds, ColLabel, get_pos_label, get_tile_color, index_for_pos, Position, PositionLabel };
-use crate::pieces::{ init_piece_data, get_possible_moves_for_piece, PieceType };
+use crate::board::{check_bounds, ColLabel, get_pos_label, get_tile_color, index_for_pos, init_board, Position, PositionLabel, Tile};
+use crate::pieces::{init_piece_data, get_possible_moves_for_piece, PieceType, Team};
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
 const HALF_TILE: f32 = TILE_SIZE.x / 2.;
 const WINDOW_DIMENSION: f32 = 640.0;
 const NUM_ROWS: u8 = 8;
 const NUM_COLUMNS: u8 = 8;
+
+#[derive(Component, Debug)]
+pub struct Piece {
+    name: String,
+    position: Position,
+    piece_type: PieceType,
+    team: Team,
+    available_moves: Vec<Position>,
+}
 
 pub mod pieces;
 mod board;
@@ -32,13 +41,6 @@ fn main() {
 #[derive(Component)]
 struct MainCamera;
 
-#[derive(Component, Debug, PartialEq, Copy, Clone)]
-pub enum Team {
-    WHITE,
-    BLACK,
-    NONE,
-}
-
 struct Mouse {
     coords: Vec2,
 }
@@ -51,24 +53,8 @@ struct Light {
 struct GameState {
     turn: Team,
     highlight_coords: Vec2,
-    selected_piece: Entity,
+    selected_piece: Option<Entity>,
     board: [[Tile; 8]; 8],
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct Tile {
-    team: Team,
-    // piece_type
-    position: Position,
-}
-
-#[derive(Component, Debug)]
-pub struct Piece {
-    name: String,
-    position: Position,
-    piece_type: PieceType,
-    team: Team,
-    available_moves: Vec<Position>,
 }
 
 fn setup(
@@ -79,21 +65,11 @@ fn setup(
         coords: Vec2::new(280., 280.),
     });
 
-    let entity = commands.spawn().id();
-
     let mut game_state = GameState {
         turn: Team::WHITE,
         highlight_coords: Vec2::ZERO,
-        selected_piece: entity,
-        board: [[
-            Tile {
-                team: Team::NONE,
-                position: Position {
-                    position_label: PositionLabel { col_label: ColLabel::A, row_label: 1 },
-                    coordinates: Vec2::ZERO
-                }
-            };
-        8]; 8]
+        selected_piece: None,
+        board: init_board(),
     };
 
     commands.spawn_bundle(Camera2dBundle::default()).insert(MainCamera);
@@ -131,8 +107,7 @@ fn setup(
             if row > 5 || row < 2 {
                 let (name, team, piece_type) = init_piece_data(current_pos);
                 let path = format!("../assets/pieces/{}.png", name);
-                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team, };
-                commands
+                let piece_id: Entity = commands
                     .spawn()
                     .insert(Piece {
                         name: name.to_string(),
@@ -148,9 +123,11 @@ fn setup(
                             ..default()
                         },
                         ..default()
-                    });
+                    })
+                    .id();
+                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team, piece: Option::from(piece_id) };
             } else {
-                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team: Team::NONE, };
+                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team: Team::NONE, piece: None, };
             }
         }
     }
@@ -186,7 +163,7 @@ fn select_piece_system(
                         ..default()
                     });
                 game_state.highlight_coords = piece_coords;
-                game_state.selected_piece = entity;
+                game_state.selected_piece = Option::from(entity);
                 piece.available_moves = get_possible_moves_for_piece(&piece as &Piece, &game_state.board);
                 break;
             }
@@ -197,15 +174,14 @@ fn select_piece_system(
 fn handle_move_system(
     buttons: Res<Input<MouseButton>>,
     mouse_coords: Res<Mouse>,
-    mut commands: Commands,
-    mut query: Query<(&mut Piece, &mut Transform)>,
+    mut query: Query<(Entity, &mut Piece, &mut Transform)>,
     mut game_state: ResMut<GameState>
 ) {
-    if !buttons.just_pressed(MouseButton::Left) {
+    if !buttons.just_pressed(MouseButton::Left) || game_state.selected_piece.is_none() {
         return;
     }
 
-    if let Ok((mut piece, mut transform)) = query.get_mut(game_state.selected_piece) {
+    if let Ok((entity, mut piece, mut transform)) = query.get_mut(game_state.selected_piece.unwrap()) {
         for position in &piece.available_moves {
             if check_bounds(position.coordinates.x, position.coordinates.y, mouse_coords.coords) {
                 let delta: Vec2 = Vec2::new(position.coordinates.x - piece.position.coordinates.x, position.coordinates.y - piece.position.coordinates.y);
@@ -215,10 +191,10 @@ fn handle_move_system(
                 let (old_row, old_col) = index_for_pos(piece.position.position_label);
                 let (new_row, new_col) = index_for_pos(position.position_label);
 
-                game_state.board[old_row][old_col] = Tile { team: Team::NONE, position: piece.position };
-                game_state.board[new_row][new_col] = Tile { team: piece.team, position: *position };
+                game_state.board[old_row][old_col] = Tile { team: Team::NONE, position: piece.position, piece: None };
+                game_state.board[new_row][new_col] = Tile { team: piece.team, position: *position, piece: Option::from(entity), };
                 game_state.highlight_coords = Vec2::ZERO;
-                game_state.selected_piece = commands.spawn().id();
+                game_state.selected_piece = None;
                 game_state.turn = if game_state.turn == Team::WHITE { Team::BLACK } else { Team::WHITE };
 
                 piece.position = *position;
