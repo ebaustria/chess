@@ -1,11 +1,11 @@
 use bevy::prelude::{ Color, Vec2 };
 use bevy::ecs::component::Component;
-use crate::{Entity, HALF_TILE, Piece, Team};
+use crate::{Entity, GameState, get_possible_moves_for_piece, HALF_TILE, Piece, PieceType, Team};
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Tile {
     pub(crate) team: Team,
     pub(crate) position: Position,
@@ -30,29 +30,45 @@ pub struct PositionLabel {
     pub(crate) row_label: u8,
 }
 
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, PartialEq, Debug, Clone, Copy)]
 pub struct Position {
     pub(crate) position_label: PositionLabel,
     pub(crate) coordinates: Vec2,
 }
 
-fn init_tile() -> Tile {
-    return Tile {
-        team: Team::NONE,
-        position: Position {
-            position_label: PositionLabel { col_label: ColLabel::A, row_label: 1 },
-            coordinates: Vec2::ZERO
-        },
-        piece: None,
-    };
+pub fn init_board() -> [[Tile; 8]; 8] {
+    return [[
+        Tile {
+            team: Team::NONE,
+            position: Position {
+                position_label: PositionLabel { col_label: ColLabel::A, row_label: 1 },
+                coordinates: Vec2::ZERO
+            },
+            piece: None,
+        };
+    8]; 8];
 }
 
-pub fn init_board() -> [[Tile; 8]; 8] {
-    return [
-        [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()),
-        [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile()),
-        [(); 8].map(|_| init_tile()), [(); 8].map(|_| init_tile())
-    ];
+pub fn init_king_positions(piece_type: PieceType, team: Team, game_state: &mut GameState, pos: Position) -> bool {
+    if piece_type == PieceType::KING {
+        if team == Team::WHITE {
+            game_state.white_king_data.position = pos;
+        } else {
+            game_state.black_king_data.position = pos;
+        }
+        return true;
+    }
+    return false;
+}
+
+pub fn update_king_data(piece: &Piece, game_state: &mut GameState, pos: Position) {
+    if init_king_positions(piece.piece_type, piece.team, game_state, pos) {
+        if piece.team == Team::WHITE {
+            game_state.white_king_data.available_moves = get_possible_moves_for_piece(piece, &game_state.board);
+        } else {
+            game_state.black_king_data.available_moves = get_possible_moves_for_piece(piece, &game_state.board);
+        }
+    }
 }
 
 pub fn get_tile_color(row: &u8, column: &u8) -> Color {
@@ -97,4 +113,22 @@ pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
         return true;
     }
     return false;
+}
+
+pub fn simulate_move(
+    board: &mut [[Tile; 8]; 8],
+    entity: Entity,
+    team: Team,
+    piece_pos: PositionLabel,
+    goal_pos: PositionLabel
+) {
+    let (old_row, old_col) = index_for_pos(piece_pos);
+    let (new_row, new_col) = index_for_pos(goal_pos);
+    let new_tile:  &mut Tile = &mut board[new_row][new_col];
+
+    new_tile.team = team;
+    new_tile.piece = Option::from(entity);
+
+    board[old_row][old_col].team = Team::NONE;
+    board[old_row][old_col].piece = None;
 }

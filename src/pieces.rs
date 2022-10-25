@@ -18,6 +18,11 @@ pub enum Team {
     NONE,
 }
 
+pub struct KingData {
+    pub(crate) position: Position,
+    pub(crate) available_moves: Vec<Position>,
+}
+
 pub fn init_piece_data(current_position: Position) -> (&'static str, Team, PieceType) {
     let Position { position_label, .. } = current_position;
     let PositionLabel { row_label, col_label } = position_label;

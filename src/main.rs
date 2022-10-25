@@ -1,21 +1,12 @@
 use bevy::{prelude::*, window::PresentMode};
-use crate::board::{check_bounds, ColLabel, get_pos_label, get_tile_color, index_for_pos, init_board, Position, PositionLabel, Tile};
-use crate::pieces::{init_piece_data, get_possible_moves_for_piece, PieceType, Team};
+use crate::board::{check_bounds, ColLabel, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, Position, PositionLabel, simulate_move, Tile, update_king_data};
+use crate::pieces::{init_piece_data, get_possible_moves_for_piece, PieceType, Team, KingData};
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
 const HALF_TILE: f32 = TILE_SIZE.x / 2.;
 const WINDOW_DIMENSION: f32 = 640.0;
 const NUM_ROWS: u8 = 8;
 const NUM_COLUMNS: u8 = 8;
-
-#[derive(Component, Debug)]
-pub struct Piece {
-    name: String,
-    position: Position,
-    piece_type: PieceType,
-    team: Team,
-    available_moves: Vec<Position>,
-}
 
 pub mod pieces;
 mod board;
@@ -35,11 +26,15 @@ fn main() {
         .add_system(select_piece_system)
         .add_system(cleanup_select_system)
         .add_system(handle_move_system)
+        .add_system(prevent_check_system)
         .run();
 }
 
 #[derive(Component)]
 struct MainCamera;
+
+#[derive(Component)]
+struct Selected;
 
 struct Mouse {
     coords: Vec2,
@@ -50,11 +45,22 @@ struct Light {
     coordinates: Vec2,
 }
 
-struct GameState {
+#[derive(Component, Debug)]
+pub struct Piece {
+    name: String,
+    position: Position,
+    piece_type: PieceType,
+    team: Team,
+    available_moves: Vec<Position>,
+}
+
+pub struct GameState {
     turn: Team,
     highlight_coords: Vec2,
     selected_piece: Option<Entity>,
     board: [[Tile; 8]; 8],
+    white_king_data: KingData,
+    black_king_data: KingData,
 }
 
 fn setup(
@@ -70,6 +76,20 @@ fn setup(
         highlight_coords: Vec2::ZERO,
         selected_piece: None,
         board: init_board(),
+        white_king_data: KingData {
+            position: Position {
+                position_label: PositionLabel { col_label: ColLabel::A, row_label: 0 },
+                coordinates: Vec2::ZERO
+            },
+            available_moves: Vec::new(),
+        },
+        black_king_data: KingData {
+            position: Position {
+                position_label: PositionLabel { col_label: ColLabel::A, row_label: 0 },
+                coordinates: Vec2::ZERO
+            },
+            available_moves: Vec::new(),
+        },
     };
 
     commands.spawn_bundle(Camera2dBundle::default()).insert(MainCamera);
@@ -90,7 +110,6 @@ fn setup(
 
             commands
                 .spawn()
-                // .insert(Tile { position: current_pos, })
                 .insert_bundle(SpriteBundle {
                     sprite: Sprite {
                         color: get_tile_color(&row, &column),
@@ -125,6 +144,8 @@ fn setup(
                         ..default()
                     })
                     .id();
+
+                init_king_positions(piece_type, team, &mut game_state, current_pos);
                 game_state.board[row as usize][column as usize] = Tile { position: current_pos, team, piece: Option::from(piece_id) };
             } else {
                 game_state.board[row as usize][column as usize] = Tile { position: current_pos, team: Team::NONE, piece: None, };
@@ -164,10 +185,53 @@ fn select_piece_system(
                     });
                 game_state.highlight_coords = piece_coords;
                 game_state.selected_piece = Option::from(entity);
+                commands.entity(entity).insert(Selected);
                 piece.available_moves = get_possible_moves_for_piece(&piece as &Piece, &game_state.board);
                 break;
             }
         }
+    }
+}
+
+fn prevent_check_system(
+    mut query_selected: Query<&mut Piece, (With<Selected>)>,
+    mut query_unselected: Query<&mut Piece, (Without<Selected>)>,
+    game_state: Res<GameState>
+) {
+    if game_state.selected_piece.is_none() {
+        return;
+    }
+
+    let selected_entity: Entity = game_state.selected_piece.unwrap();
+    if let Ok(mut selected_piece) = query_selected.get_mut(selected_entity) {
+        if selected_piece.piece_type == PieceType::KING {
+            return;
+        }
+        let king_pos: Position = if game_state.turn == Team::WHITE { game_state.white_king_data.position } else { game_state.black_king_data.position };
+        let team: Team = selected_piece.team;
+        let piece_pos: PositionLabel = selected_piece.position.position_label;
+        selected_piece.available_moves.retain(|position| {
+            let mut board_copy: [[Tile; 8]; 8] = game_state.board;
+            simulate_move(
+                &mut board_copy,
+                selected_entity,
+                team,
+                piece_pos,
+                position.position_label
+            );
+
+            for piece in query_unselected.iter_mut() {
+                if piece.team == game_state.turn {
+                    continue;
+                }
+
+                let available_enemy_moves: Vec<Position> = get_possible_moves_for_piece(&piece as &Piece, &board_copy);
+                return !available_enemy_moves.iter().any(|&pos| {
+                    return pos.position_label == king_pos.position_label && *position != piece.position;
+                });
+            }
+            return true;
+        });
     }
 }
 
@@ -191,6 +255,8 @@ fn handle_move_system(
 
                 let (old_row, old_col) = index_for_pos(piece.position.position_label);
                 let (new_row, new_col) = index_for_pos(position.position_label);
+                let new_pos: Position = game_state.board[new_row][new_col].position;
+                update_king_data(&piece, &mut game_state, new_pos);
                 let new_tile: &mut Tile = &mut game_state.board[new_row][new_col];
 
                 // capture piece if tile contains enemy
@@ -210,6 +276,7 @@ fn handle_move_system(
 
                 piece.position = *position;
                 piece.available_moves = Vec::new();
+                commands.entity(entity).remove::<Selected>();
                 break;
             }
         }
