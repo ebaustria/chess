@@ -23,10 +23,17 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
         .add_system(update_mouse_coords_system)
+        .add_system(handle_move_system
+            .after(select_piece_system)
+        )
         .add_system(select_piece_system)
-        .add_system(cleanup_select_system)
-        .add_system(handle_move_system)
-        .add_system(prevent_check_system)
+        .add_system(cleanup_select_system
+            .after(select_piece_system)
+        )
+        .add_system(prevent_check_system
+            .after(select_piece_system)
+            .before(handle_move_system)
+        )
         .run();
 }
 
@@ -161,10 +168,18 @@ fn select_piece_system(
     mouse_coords: Res<Mouse>,
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
-    mut query: Query<(Entity, &mut Piece)>,
+    mut query_unselected: Query<(Entity, &mut Piece), Without<Selected>>,
+    mut query_selected: Query<(Entity, &mut Piece), With<Selected>>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
-        for (entity, mut piece) in query.iter_mut() {
+        for (entity, mut piece) in query_selected.iter_mut() {
+            let piece_coords = piece.position.coordinates;
+            let in_bounds: bool = check_bounds(piece_coords.x, piece_coords.y, mouse_coords.coords);
+            if !in_bounds && piece.team == game_state.turn && game_state.highlight_coords == piece_coords {
+                commands.entity(entity).remove::<Selected>();
+            }
+        }
+        for (entity, mut piece) in query_unselected.iter_mut() {
             let piece_coords = piece.position.coordinates;
             let in_bounds: bool = check_bounds(piece_coords.x, piece_coords.y, mouse_coords.coords);
             if in_bounds && piece.team == game_state.turn && game_state.highlight_coords != piece_coords {
@@ -186,7 +201,7 @@ fn select_piece_system(
                 game_state.highlight_coords = piece_coords;
                 game_state.selected_piece = Option::from(entity);
                 commands.entity(entity).insert(Selected);
-                piece.available_moves = get_possible_moves_for_piece(&piece as &Piece, &game_state.board);
+                piece.available_moves = get_possible_moves_for_piece(&piece, &game_state.board);
                 break;
             }
         }
@@ -194,8 +209,8 @@ fn select_piece_system(
 }
 
 fn prevent_check_system(
-    mut query_selected: Query<&mut Piece, (With<Selected>)>,
-    mut query_unselected: Query<&mut Piece, (Without<Selected>)>,
+    mut query_selected: Query<&mut Piece, With<Selected>>,
+    mut query_unselected: Query<&mut Piece, Without<Selected>>,
     game_state: Res<GameState>
 ) {
     if game_state.selected_piece.is_none() {
@@ -210,28 +225,32 @@ fn prevent_check_system(
         let king_pos: Position = if game_state.turn == Team::WHITE { game_state.white_king_data.position } else { game_state.black_king_data.position };
         let team: Team = selected_piece.team;
         let piece_pos: PositionLabel = selected_piece.position.position_label;
-        selected_piece.available_moves.retain(|position| {
-            let mut board_copy: [[Tile; 8]; 8] = game_state.board;
-            simulate_move(
-                &mut board_copy,
-                selected_entity,
-                team,
-                piece_pos,
-                position.position_label
-            );
+        for enemy_piece in query_unselected.iter() {
+            if enemy_piece.team == game_state.turn {
+                continue;
+            }
 
-            for piece in query_unselected.iter_mut() {
-                if piece.team == game_state.turn {
-                    continue;
+            selected_piece.available_moves.retain(|position| {
+                if position.position_label == enemy_piece.position.position_label {
+                    return true;
                 }
 
-                let available_enemy_moves: Vec<Position> = get_possible_moves_for_piece(&piece as &Piece, &board_copy);
+                let mut board_copy: [[Tile; 8]; 8] = game_state.board;
+
+                simulate_move(
+                    &mut board_copy,
+                    selected_entity,
+                    team,
+                    piece_pos,
+                    position.position_label
+                );
+
+                let available_enemy_moves: Vec<Position> = get_possible_moves_for_piece(&enemy_piece, &board_copy);
                 return !available_enemy_moves.iter().any(|&pos| {
-                    return pos.position_label == king_pos.position_label && *position != piece.position;
+                    return pos.position_label == king_pos.position_label;
                 });
-            }
-            return true;
-        });
+            });
+        }
     }
 }
 
@@ -239,7 +258,7 @@ fn handle_move_system(
     buttons: Res<Input<MouseButton>>,
     mouse_coords: Res<Mouse>,
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Piece, &mut Transform)>,
+    mut query: Query<(Entity, &mut Piece, &mut Transform), With<Selected>>,
     mut game_state: ResMut<GameState>
 ) {
     if !buttons.just_pressed(MouseButton::Left) || game_state.selected_piece.is_none() {
