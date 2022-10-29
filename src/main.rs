@@ -1,5 +1,7 @@
+use std::borrow::BorrowMut;
 use bevy::{prelude::*, window::PresentMode};
-use crate::board::{check_bounds, ColLabel, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, Position, PositionLabel, simulate_move, Tile, update_king_data};
+use crate::board::{check_bounds, ColLabel, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, Position, PositionLabel, simulate_move, Tile, update_king_data};
+use crate::check::prevent_check;
 use crate::pieces::{init_piece_data, get_possible_moves_for_piece, PieceType, Team, KingData};
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
@@ -8,8 +10,9 @@ const WINDOW_DIMENSION: f32 = 640.0;
 const NUM_ROWS: u8 = 8;
 const NUM_COLUMNS: u8 = 8;
 
-pub mod pieces;
+mod pieces;
 mod board;
+mod check;
 
 fn main() {
     App::new()
@@ -83,20 +86,8 @@ fn setup(
         highlight_coords: Vec2::ZERO,
         selected_piece: None,
         board: init_board(),
-        white_king_data: KingData {
-            position: Position {
-                position_label: PositionLabel { col_label: ColLabel::A, row_label: 0 },
-                coordinates: Vec2::ZERO
-            },
-            available_moves: Vec::new(),
-        },
-        black_king_data: KingData {
-            position: Position {
-                position_label: PositionLabel { col_label: ColLabel::A, row_label: 0 },
-                coordinates: Vec2::ZERO
-            },
-            available_moves: Vec::new(),
-        },
+        white_king_data: default_king_data(),
+        black_king_data: default_king_data(),
     };
 
     commands.spawn_bundle(Camera2dBundle::default()).insert(MainCamera);
@@ -222,34 +213,13 @@ fn prevent_check_system(
         if selected_piece.piece_type == PieceType::KING {
             return;
         }
-        let king_pos: Position = if game_state.turn == Team::WHITE { game_state.white_king_data.position } else { game_state.black_king_data.position };
-        let team: Team = selected_piece.team;
-        let piece_pos: PositionLabel = selected_piece.position.position_label;
+        let king_pos: Position = if game_state.turn == Team::WHITE {
+            game_state.white_king_data.position
+        } else {
+            game_state.black_king_data.position
+        };
         for enemy_piece in query_unselected.iter() {
-            if enemy_piece.team == game_state.turn {
-                continue;
-            }
-
-            selected_piece.available_moves.retain(|position| {
-                if position.position_label == enemy_piece.position.position_label {
-                    return true;
-                }
-
-                let mut board_copy: [[Tile; 8]; 8] = game_state.board;
-
-                simulate_move(
-                    &mut board_copy,
-                    selected_entity,
-                    team,
-                    piece_pos,
-                    position.position_label
-                );
-
-                let available_enemy_moves: Vec<Position> = get_possible_moves_for_piece(&enemy_piece, &board_copy);
-                return !available_enemy_moves.iter().any(|&pos| {
-                    return pos.position_label == king_pos.position_label;
-                });
-            });
+            prevent_check(selected_piece.borrow_mut(), selected_entity, enemy_piece, king_pos, &game_state);
         }
     }
 }

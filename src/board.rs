@@ -1,6 +1,6 @@
 use bevy::prelude::{ Color, Vec2 };
 use bevy::ecs::component::Component;
-use crate::{Entity, GameState, get_possible_moves_for_piece, HALF_TILE, Piece, PieceType, Team};
+use crate::{Entity, GameState, get_possible_moves_for_piece, HALF_TILE, KingData, Piece, PieceType, Team};
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
@@ -47,6 +47,16 @@ pub fn init_board() -> [[Tile; 8]; 8] {
             piece: None,
         };
     8]; 8];
+}
+
+pub fn default_king_data() -> KingData {
+    return KingData {
+        position: Position {
+            position_label: PositionLabel { col_label: ColLabel::A, row_label: 0 },
+            coordinates: Vec2::ZERO
+        },
+        available_moves: Vec::new(),
+    };
 }
 
 pub fn init_king_positions(piece_type: PieceType, team: Team, game_state: &mut GameState, pos: Position) -> bool {
