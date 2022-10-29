@@ -210,9 +210,6 @@ fn prevent_check_system(
 
     let selected_entity: Entity = game_state.selected_piece.unwrap();
     if let Ok(mut selected_piece) = query_selected.get_mut(selected_entity) {
-        if selected_piece.piece_type == PieceType::KING {
-            return;
-        }
         let king_pos: Position = if game_state.turn == Team::WHITE {
             game_state.white_king_data.position
         } else {
