@@ -160,16 +160,9 @@ fn select_piece_system(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
     mut query_unselected: Query<(Entity, &mut Piece), Without<Selected>>,
-    mut query_selected: Query<(Entity, &mut Piece), With<Selected>>,
+    mut query_selected: Query<Entity, With<Selected>>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
-        for (entity, mut piece) in query_selected.iter_mut() {
-            let piece_coords = piece.position.coordinates;
-            let in_bounds: bool = check_bounds(piece_coords.x, piece_coords.y, mouse_coords.coords);
-            if !in_bounds && piece.team == game_state.turn && game_state.highlight_coords == piece_coords {
-                commands.entity(entity).remove::<Selected>();
-            }
-        }
         for (entity, mut piece) in query_unselected.iter_mut() {
             let piece_coords = piece.position.coordinates;
             let in_bounds: bool = check_bounds(piece_coords.x, piece_coords.y, mouse_coords.coords);
@@ -191,6 +184,9 @@ fn select_piece_system(
                     });
                 game_state.highlight_coords = piece_coords;
                 game_state.selected_piece = Option::from(entity);
+                for (entity) in query_selected.iter_mut() {
+                    commands.entity(entity).remove::<Selected>();
+                }
                 commands.entity(entity).insert(Selected);
                 piece.available_moves = get_possible_moves_for_piece(&piece, &game_state.board);
                 break;
