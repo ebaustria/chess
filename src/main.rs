@@ -1,7 +1,10 @@
 use std::borrow::BorrowMut;
+use std::process;
 use bevy::{prelude::*, window::PresentMode};
-use crate::board::{check_bounds, ColLabel, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, Position, PositionLabel, simulate_move, Tile, update_king_data};
-use crate::check::prevent_check;
+use crate::board::{check_bounds, ColLabel, default_king_data, get_pos_label, get_tile_color,
+                   index_for_pos, init_board, init_king_positions, Position, PositionLabel,
+                   simulate_move, Tile, update_king_data};
+use crate::check::{check_checkmate, prevent_check};
 use crate::pieces::{init_piece_data, get_possible_moves_for_piece, PieceType, Team, KingData};
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
@@ -37,6 +40,9 @@ fn main() {
             .after(select_piece_system)
             .before(handle_move_system)
         )
+        .add_system(enforce_checkmate_system
+            .after(handle_move_system)
+        )
         .run();
 }
 
@@ -44,7 +50,7 @@ fn main() {
 struct MainCamera;
 
 #[derive(Component)]
-struct Selected;
+pub struct Selected;
 
 struct Mouse {
     coords: Vec2,
@@ -184,7 +190,7 @@ fn select_piece_system(
                     });
                 game_state.highlight_coords = piece_coords;
                 game_state.selected_piece = Option::from(entity);
-                for (entity) in query_selected.iter_mut() {
+                for entity in query_selected.iter_mut() {
                     commands.entity(entity).remove::<Selected>();
                 }
                 commands.entity(entity).insert(Selected);
@@ -214,6 +220,21 @@ fn prevent_check_system(
         for enemy_piece in query_unselected.iter() {
             prevent_check(selected_piece.borrow_mut(), selected_entity, enemy_piece, king_pos, &game_state);
         }
+    }
+}
+
+fn enforce_checkmate_system(game_state: Res<GameState>, query_unselected: Query<(Entity, &mut Piece), Without<Selected>>) {
+    let is_checkmate: bool;
+
+    if game_state.turn == Team::WHITE {
+        is_checkmate = check_checkmate(game_state.turn, game_state.white_king_data.position, game_state.board, query_unselected);
+    } else {
+        is_checkmate = check_checkmate(game_state.turn, game_state.black_king_data.position, game_state.board, query_unselected);
+    }
+
+    if is_checkmate {
+        println!("Checkmate!");
+        process::exit(0x00);
     }
 }
 
