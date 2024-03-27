@@ -63,7 +63,7 @@ struct Light {
 
 #[derive(Component, Debug)]
 pub struct Piece {
-    name: String,
+    // name: String,
     position: Position,
     piece_type: PieceType,
     team: Team,
@@ -133,7 +133,7 @@ fn setup(
                 let piece_id: Entity = commands
                     .spawn()
                     .insert(Piece {
-                        name: name.to_string(),
+                        // name: name.to_string(),
                         position: current_pos,
                         team,
                         piece_type,
