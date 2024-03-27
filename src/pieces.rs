@@ -13,9 +13,9 @@ pub enum PieceType {
 
 #[derive(Component, Debug, PartialEq, Copy, Clone)]
 pub enum Team {
-    WHITE,
-    BLACK,
-    NONE,
+    White,
+    Black,
+    None,
 }
 
 pub struct KingData {
@@ -28,37 +28,37 @@ pub fn init_piece_data(current_position: Position) -> (&'static str, Team, Piece
     let PositionLabel { row_label, col_label } = position_label;
 
     if row_label == 7 {
-        return ("bP", Team::BLACK, PieceType::PAWN);
+        return ("bP", Team::Black, PieceType::PAWN);
     }
 
     if row_label == 2 {
-        return ("wP", Team::WHITE, PieceType::PAWN);
+        return ("wP", Team::White, PieceType::PAWN);
     }
 
     if row_label == 8 {
         let data = match col_label {
-            ColLabel::A => ("bR", Team::BLACK, PieceType::ROOK),
-            ColLabel::B => ("bN", Team::BLACK, PieceType::KNIGHT),
-            ColLabel::C => ("bB", Team::BLACK, PieceType::BISHOP),
-            ColLabel::D => ("bQ", Team::BLACK, PieceType::QUEEN),
-            ColLabel::E => ("bK", Team::BLACK, PieceType::KING),
-            ColLabel::F => ("bB", Team::BLACK, PieceType::BISHOP),
-            ColLabel::G => ("bN", Team::BLACK, PieceType::KNIGHT),
-            ColLabel::H => ("bR", Team::BLACK, PieceType::ROOK)
+            ColLabel::A => ("bR", Team::Black, PieceType::ROOK),
+            ColLabel::B => ("bN", Team::Black, PieceType::KNIGHT),
+            ColLabel::C => ("bB", Team::Black, PieceType::BISHOP),
+            ColLabel::D => ("bQ", Team::Black, PieceType::QUEEN),
+            ColLabel::E => ("bK", Team::Black, PieceType::KING),
+            ColLabel::F => ("bB", Team::Black, PieceType::BISHOP),
+            ColLabel::G => ("bN", Team::Black, PieceType::KNIGHT),
+            ColLabel::H => ("bR", Team::Black, PieceType::ROOK)
         };
         return data;
     }
 
     
     match col_label {
-        ColLabel::A => ("wR", Team::WHITE, PieceType::ROOK),
-        ColLabel::B => ("wN", Team::WHITE, PieceType::KNIGHT),
-        ColLabel::C => ("wB", Team::WHITE, PieceType::BISHOP),
-        ColLabel::D => ("wQ", Team::WHITE, PieceType::QUEEN),
-        ColLabel::E => ("wK", Team::WHITE, PieceType::KING),
-        ColLabel::F => ("wB", Team::WHITE, PieceType::BISHOP),
-        ColLabel::G => ("wN", Team::WHITE, PieceType::KNIGHT),
-        ColLabel::H => ("wR", Team::WHITE, PieceType::ROOK)
+        ColLabel::A => ("wR", Team::White, PieceType::ROOK),
+        ColLabel::B => ("wN", Team::White, PieceType::KNIGHT),
+        ColLabel::C => ("wB", Team::White, PieceType::BISHOP),
+        ColLabel::D => ("wQ", Team::White, PieceType::QUEEN),
+        ColLabel::E => ("wK", Team::White, PieceType::KING),
+        ColLabel::F => ("wB", Team::White, PieceType::BISHOP),
+        ColLabel::G => ("wN", Team::White, PieceType::KNIGHT),
+        ColLabel::H => ("wR", Team::White, PieceType::ROOK)
     }
 }
 
@@ -221,7 +221,7 @@ fn lower_vertical_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, posit
 
     if row_check > -1 && board[row_check as usize][col].team != piece.team {
         let tile: &Tile = &board[row_check as usize][col];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -236,7 +236,7 @@ fn upper_vertical_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8, posit
 
     if row_check < 8 && board[row_check][col].team != piece.team {
         let tile: &Tile = &board[row_check][col];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -251,7 +251,7 @@ fn right_horizontal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8, pos
 
     if col_check < 8 && board[row][col_check].team != piece.team {
         let tile: &Tile = &board[row][col_check];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -266,7 +266,7 @@ fn left_horizontal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, posi
 
     if col_check > -1 && board[row][col_check as usize].team != piece.team {
         let tile: &Tile = &board[row][col_check as usize];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -281,7 +281,7 @@ fn lower_right_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8,
 
     if row_check > -1 && col_check < 8 && board[row_check as usize][col_check].team != piece.team {
         let tile: &Tile = &board[row_check as usize][col_check];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -296,7 +296,7 @@ fn lower_left_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, 
 
     if row_check > -1 && col_check > -1 && board[row_check as usize][col_check as usize].team != piece.team {
         let tile: &Tile = &board[row_check as usize][col_check as usize];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -311,7 +311,7 @@ fn upper_right_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: u8,
 
     if row_check < 8 && col_check < 8 && board[row_check][col_check].team != piece.team {
         let tile: &Tile = &board[row_check][col_check];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -326,7 +326,7 @@ fn upper_left_diagonal_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, 
 
     if row_check < 8 && col_check > -1 && board[row_check][col_check as usize].team != piece.team {
         let tile: &Tile = &board[row_check][col_check as usize];
-        if tile.team != Team::NONE {
+        if tile.team != Team::None {
             positions.push(tile.position);
             return;
         }
@@ -339,36 +339,36 @@ fn possible_moves_for_pawn(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
     let mut result = Vec::new();
     let col = piece.position.position_label.col_label as usize;
     let row = piece.position.position_label.row_label as usize;
-    if piece.team == Team::WHITE {
+    if piece.team == Team::White {
         if row == 2 {
             let row_label = row + 1;
-            if board[row_label][col].team == Team::NONE {
+            if board[row_label][col].team == Team::None {
                 result.push(board[row_label][col].position);
             }
         }
 
-        if board[row][col].team == Team::NONE {
+        if board[row][col].team == Team::None {
             result.push(board[row][col].position);
         }
 
-        attack_moves_for_pawn(board, row, col, Team::BLACK, &mut result);
+        attack_moves_for_pawn(board, row, col, Team::Black, &mut result);
         return result;
     }
 
     // Get moves for black pawns
     if row == 7 {
         let row_label = row - 3;
-        if board[row_label][col].team == Team::NONE {
+        if board[row_label][col].team == Team::None {
             result.push(board[row_label][col].position);
         }
     }
 
     let row_label = row - 2;
-    if board[row_label][col].team == Team::NONE {
+    if board[row_label][col].team == Team::None {
         result.push(board[row_label][col].position);
     }
 
-    attack_moves_for_pawn(board, row_label, col, Team::WHITE, &mut result);
+    attack_moves_for_pawn(board, row_label, col, Team::White, &mut result);
     result
 }
 

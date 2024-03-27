@@ -39,7 +39,7 @@ pub struct Position {
 pub fn init_board() -> [[Tile; 8]; 8] {
     [[
         Tile {
-            team: Team::NONE,
+            team: Team::None,
             position: Position {
                 position_label: PositionLabel { col_label: ColLabel::A, row_label: 1 },
                 coordinates: Vec2::ZERO
@@ -61,7 +61,7 @@ pub fn default_king_data() -> KingData {
 
 pub fn init_king_positions(piece_type: PieceType, team: Team, game_state: &mut GameState, pos: Position) -> bool {
     if piece_type == PieceType::KING {
-        if team == Team::WHITE {
+        if team == Team::White {
             game_state.white_king_data.position = pos;
         } else {
             game_state.black_king_data.position = pos;
@@ -73,7 +73,7 @@ pub fn init_king_positions(piece_type: PieceType, team: Team, game_state: &mut G
 
 pub fn update_king_data(piece: &Piece, game_state: &mut GameState, pos: Position) {
     if init_king_positions(piece.piece_type, piece.team, game_state, pos) {
-        if piece.team == Team::WHITE {
+        if piece.team == Team::White {
             game_state.white_king_data.available_moves = get_possible_moves_for_piece(piece, &game_state.board);
         } else {
             game_state.black_king_data.available_moves = get_possible_moves_for_piece(piece, &game_state.board);
@@ -139,6 +139,6 @@ pub fn simulate_move(
     new_tile.team = team;
     new_tile.piece = Option::from(entity);
 
-    board[old_row][old_col].team = Team::NONE;
+    board[old_row][old_col].team = Team::None;
     board[old_row][old_col].piece = None;
 }

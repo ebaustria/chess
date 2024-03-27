@@ -88,7 +88,7 @@ fn setup(
     });
 
     let mut game_state = GameState {
-        turn: Team::WHITE,
+        turn: Team::White,
         highlight_coords: Vec2::ZERO,
         selected_piece: None,
         board: init_board(),
@@ -152,7 +152,7 @@ fn setup(
                 init_king_positions(piece_type, team, &mut game_state, current_pos);
                 game_state.board[row as usize][column as usize] = Tile { position: current_pos, team, piece: Option::from(piece_id) };
             } else {
-                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team: Team::NONE, piece: None, };
+                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team: Team::None, piece: None, };
             }
         }
     }
@@ -212,7 +212,7 @@ fn prevent_check_system(
 
     let selected_entity: Entity = game_state.selected_piece.unwrap();
     if let Ok(mut selected_piece) = query_selected.get_mut(selected_entity) {
-        let king_pos: Position = if game_state.turn == Team::WHITE {
+        let king_pos: Position = if game_state.turn == Team::White {
             game_state.white_king_data.position
         } else {
             game_state.black_king_data.position
@@ -224,7 +224,7 @@ fn prevent_check_system(
 }
 
 fn enforce_checkmate_system(game_state: Res<GameState>, query_unselected: Query<(Entity, &mut Piece), Without<Selected>>) {
-    let is_checkmate: bool = if game_state.turn == Team::WHITE {
+    let is_checkmate: bool = if game_state.turn == Team::White {
         check_checkmate(game_state.turn, game_state.white_king_data.position, game_state.board, query_unselected)
     } else {
         check_checkmate(game_state.turn, game_state.black_king_data.position, game_state.board, query_unselected)
@@ -268,12 +268,12 @@ fn handle_move_system(
                 new_tile.team = piece.team;
                 new_tile.piece = Option::from(entity);
 
-                game_state.board[old_row][old_col].team = Team::NONE;
+                game_state.board[old_row][old_col].team = Team::None;
                 game_state.board[old_row][old_col].piece = None;
 
                 game_state.highlight_coords = Vec2::ZERO;
                 game_state.selected_piece = None;
-                game_state.turn = if game_state.turn == Team::WHITE { Team::BLACK } else { Team::WHITE };
+                game_state.turn = if game_state.turn == Team::White { Team::Black } else { Team::White };
 
                 piece.position = *position;
                 piece.available_moves = Vec::new();
