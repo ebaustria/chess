@@ -49,7 +49,8 @@ pub fn init_piece_data(current_position: Position) -> (&'static str, Team, Piece
         return data;
     }
 
-    let data = match col_label {
+    
+    match col_label {
         ColLabel::A => ("wR", Team::WHITE, PieceType::ROOK),
         ColLabel::B => ("wN", Team::WHITE, PieceType::KNIGHT),
         ColLabel::C => ("wB", Team::WHITE, PieceType::BISHOP),
@@ -58,8 +59,7 @@ pub fn init_piece_data(current_position: Position) -> (&'static str, Team, Piece
         ColLabel::F => ("wB", Team::WHITE, PieceType::BISHOP),
         ColLabel::G => ("wN", Team::WHITE, PieceType::KNIGHT),
         ColLabel::H => ("wR", Team::WHITE, PieceType::ROOK)
-    };
-    data
+    }
 }
 
 pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
