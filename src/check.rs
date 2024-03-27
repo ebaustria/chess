@@ -33,7 +33,7 @@ pub fn prevent_check(
 
         let available_enemy_moves: Vec<Position> = get_possible_moves_for_piece(enemy_piece, &board_copy);
         return !available_enemy_moves.iter().any(|&pos| {
-            if selected_piece.piece_type == PieceType::KING {
+            if selected_piece.piece_type == PieceType::King {
                 return pos.position_label == move_label;
             }
             pos.position_label == king_pos.position_label
@@ -84,7 +84,7 @@ pub fn check_checkmate(turn: Team, king_pos: Position, board: [[Tile; 8]; 8], qu
                 let available_enemy_moves: Vec<Position> = get_possible_moves_for_piece(enemy_piece, &board_copy);
 
                 retain_move = !available_enemy_moves.iter().any(|&pos| {
-                    if piece.piece_type == PieceType::KING {
+                    if piece.piece_type == PieceType::King {
                         return pos.position_label == move_label;
                     }
                     pos.position_label == king_pos.position_label

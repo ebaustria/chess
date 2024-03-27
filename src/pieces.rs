@@ -3,12 +3,12 @@ use bevy::ecs::component::Component;
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum PieceType {
-    PAWN,
-    BISHOP,
-    KNIGHT,
-    ROOK,
-    QUEEN,
-    KING
+    Pawn,
+    Bishop,
+    Knight,
+    Rook,
+    Queen,
+    King
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone)]
@@ -28,48 +28,48 @@ pub fn init_piece_data(current_position: Position) -> (&'static str, Team, Piece
     let PositionLabel { row_label, col_label } = position_label;
 
     if row_label == 7 {
-        return ("bP", Team::Black, PieceType::PAWN);
+        return ("bP", Team::Black, PieceType::Pawn);
     }
 
     if row_label == 2 {
-        return ("wP", Team::White, PieceType::PAWN);
+        return ("wP", Team::White, PieceType::Pawn);
     }
 
     if row_label == 8 {
         let data = match col_label {
-            ColLabel::A => ("bR", Team::Black, PieceType::ROOK),
-            ColLabel::B => ("bN", Team::Black, PieceType::KNIGHT),
-            ColLabel::C => ("bB", Team::Black, PieceType::BISHOP),
-            ColLabel::D => ("bQ", Team::Black, PieceType::QUEEN),
-            ColLabel::E => ("bK", Team::Black, PieceType::KING),
-            ColLabel::F => ("bB", Team::Black, PieceType::BISHOP),
-            ColLabel::G => ("bN", Team::Black, PieceType::KNIGHT),
-            ColLabel::H => ("bR", Team::Black, PieceType::ROOK)
+            ColLabel::A => ("bR", Team::Black, PieceType::Rook),
+            ColLabel::B => ("bN", Team::Black, PieceType::Knight),
+            ColLabel::C => ("bB", Team::Black, PieceType::Bishop),
+            ColLabel::D => ("bQ", Team::Black, PieceType::Queen),
+            ColLabel::E => ("bK", Team::Black, PieceType::King),
+            ColLabel::F => ("bB", Team::Black, PieceType::Bishop),
+            ColLabel::G => ("bN", Team::Black, PieceType::Knight),
+            ColLabel::H => ("bR", Team::Black, PieceType::Rook)
         };
         return data;
     }
 
     
     match col_label {
-        ColLabel::A => ("wR", Team::White, PieceType::ROOK),
-        ColLabel::B => ("wN", Team::White, PieceType::KNIGHT),
-        ColLabel::C => ("wB", Team::White, PieceType::BISHOP),
-        ColLabel::D => ("wQ", Team::White, PieceType::QUEEN),
-        ColLabel::E => ("wK", Team::White, PieceType::KING),
-        ColLabel::F => ("wB", Team::White, PieceType::BISHOP),
-        ColLabel::G => ("wN", Team::White, PieceType::KNIGHT),
-        ColLabel::H => ("wR", Team::White, PieceType::ROOK)
+        ColLabel::A => ("wR", Team::White, PieceType::Rook),
+        ColLabel::B => ("wN", Team::White, PieceType::Knight),
+        ColLabel::C => ("wB", Team::White, PieceType::Bishop),
+        ColLabel::D => ("wQ", Team::White, PieceType::Queen),
+        ColLabel::E => ("wK", Team::White, PieceType::King),
+        ColLabel::F => ("wB", Team::White, PieceType::Bishop),
+        ColLabel::G => ("wN", Team::White, PieceType::Knight),
+        ColLabel::H => ("wR", Team::White, PieceType::Rook)
     }
 }
 
 pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
     match piece.piece_type {
-        PieceType::PAWN => possible_moves_for_pawn(piece, board),
-        PieceType::BISHOP => possible_moves_for_bishop(piece, board),
-        PieceType::KNIGHT => possible_moves_for_knight(piece, board),
-        PieceType::ROOK => possible_moves_for_rook(piece, board),
-        PieceType::QUEEN => possible_moves_for_queen(piece, board),
-        PieceType::KING => possible_moves_for_king(piece, board),
+        PieceType::Pawn => possible_moves_for_pawn(piece, board),
+        PieceType::Bishop => possible_moves_for_bishop(piece, board),
+        PieceType::Knight => possible_moves_for_knight(piece, board),
+        PieceType::Rook => possible_moves_for_rook(piece, board),
+        PieceType::Queen => possible_moves_for_queen(piece, board),
+        PieceType::King => possible_moves_for_king(piece, board),
     }
 }
 

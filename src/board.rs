@@ -60,7 +60,7 @@ pub fn default_king_data() -> KingData {
 }
 
 pub fn init_king_positions(piece_type: PieceType, team: Team, game_state: &mut GameState, pos: Position) -> bool {
-    if piece_type == PieceType::KING {
+    if piece_type == PieceType::King {
         if team == Team::White {
             game_state.white_king_data.position = pos;
         } else {
