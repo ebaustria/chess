@@ -37,7 +37,7 @@ pub struct Position {
 }
 
 pub fn init_board() -> [[Tile; 8]; 8] {
-    return [[
+    [[
         Tile {
             team: Team::NONE,
             position: Position {
@@ -46,17 +46,17 @@ pub fn init_board() -> [[Tile; 8]; 8] {
             },
             piece: None,
         };
-    8]; 8];
+    8]; 8]
 }
 
 pub fn default_king_data() -> KingData {
-    return KingData {
+    KingData {
         position: Position {
             position_label: PositionLabel { col_label: ColLabel::A, row_label: 0 },
             coordinates: Vec2::ZERO
         },
         available_moves: Vec::new(),
-    };
+    }
 }
 
 pub fn init_king_positions(piece_type: PieceType, team: Team, game_state: &mut GameState, pos: Position) -> bool {
@@ -68,7 +68,7 @@ pub fn init_king_positions(piece_type: PieceType, team: Team, game_state: &mut G
         }
         return true;
     }
-    return false;
+    false
 }
 
 pub fn update_king_data(piece: &Piece, game_state: &mut GameState, pos: Position) {
@@ -91,11 +91,11 @@ pub fn get_tile_color(row: &u8, column: &u8) -> Color {
     if column % 2 == 0 {
         return TILE_LIGHT;
     }
-    return TILE_DARK;
+    TILE_DARK
 }
 
 pub fn index_for_pos(pos_label: PositionLabel) -> (usize, usize) {
-    return ((pos_label.row_label - 1 ) as usize, pos_label.col_label as usize);
+    ((pos_label.row_label - 1 ) as usize, pos_label.col_label as usize)
 }
 
 pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
@@ -110,7 +110,7 @@ pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
         _ => ColLabel::H,
     };
 
-    return (column_position, row + 1);
+    (column_position, row + 1)
 }
 
 pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
@@ -122,7 +122,7 @@ pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
     if mouse_coords.x <= right_bound && mouse_coords.x >= left_bound && mouse_coords.y <= upper_bound && mouse_coords.y >= lower_bound {
         return true;
     }
-    return false;
+    false
 }
 
 pub fn simulate_move(

@@ -59,18 +59,18 @@ pub fn init_piece_data(current_position: Position) -> (&'static str, Team, Piece
         ColLabel::G => ("wN", Team::WHITE, PieceType::KNIGHT),
         ColLabel::H => ("wR", Team::WHITE, PieceType::ROOK)
     };
-    return data;
+    data
 }
 
 pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    return match piece.piece_type {
+    match piece.piece_type {
         PieceType::PAWN => possible_moves_for_pawn(piece, board),
         PieceType::BISHOP => possible_moves_for_bishop(piece, board),
         PieceType::KNIGHT => possible_moves_for_knight(piece, board),
         PieceType::ROOK => possible_moves_for_rook(piece, board),
         PieceType::QUEEN => possible_moves_for_queen(piece, board),
         PieceType::KING => possible_moves_for_king(piece, board),
-    };
+    }
 }
 
 fn possible_moves_for_knight(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
@@ -124,7 +124,7 @@ fn possible_moves_for_knight(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Posit
         }
     }
 
-    return result;
+    result
 }
 
 fn add_position(team: Team, tile: &Tile, result: &mut Vec<Position>) {
@@ -172,7 +172,7 @@ fn possible_moves_for_king(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
         add_position(piece.team, &board[row as usize][col_right], &mut result);
     }
 
-    return result;
+    result
 }
 
 fn possible_moves_for_queen(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
@@ -188,7 +188,7 @@ fn possible_moves_for_queen(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positi
     lower_left_diagonal_moves(piece, board, radius, &mut result);
     lower_right_diagonal_moves(piece, board, radius, &mut result);
 
-    return result;
+    result
 }
 
 fn possible_moves_for_rook(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
@@ -200,7 +200,7 @@ fn possible_moves_for_rook(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
     left_horizontal_moves(piece, board, radius, &mut result);
     right_horizontal_moves(piece, board, radius as u8, &mut result);
 
-    return result;
+    result
 }
 
 fn possible_moves_for_bishop(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
@@ -212,7 +212,7 @@ fn possible_moves_for_bishop(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Posit
     lower_left_diagonal_moves(piece, board, radius, &mut result);
     lower_right_diagonal_moves(piece, board, radius, &mut result);
 
-    return result;
+    result
 }
 
 fn lower_vertical_moves(piece: &Piece, board: &[[Tile; 8]; 8], radius: i8, positions: &mut Vec<Position>) {
@@ -369,7 +369,7 @@ fn possible_moves_for_pawn(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Positio
     }
 
     attack_moves_for_pawn(board, row_label, col, Team::WHITE, &mut result);
-    return result;
+    result
 }
 
 fn attack_moves_for_pawn(

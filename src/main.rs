@@ -127,7 +127,7 @@ fn setup(
                    ..default()
                 });
 
-            if row > 5 || row < 2 {
+            if !(2..=5).contains(&row) {
                 let (name, team, piece_type) = init_piece_data(current_pos);
                 let path = format!("../assets/pieces/{}.png", name);
                 let piece_id: Entity = commands
@@ -203,7 +203,7 @@ fn select_piece_system(
 
 fn prevent_check_system(
     mut query_selected: Query<&mut Piece, With<Selected>>,
-    mut query_unselected: Query<&mut Piece, Without<Selected>>,
+    query_unselected: Query<&mut Piece, Without<Selected>>,
     game_state: Res<GameState>
 ) {
     if game_state.selected_piece.is_none() {
