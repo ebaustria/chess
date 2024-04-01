@@ -6,6 +6,7 @@ use bevy::window::{PrimaryWindow, WindowTheme};
 use crate::board::{BOARD_DIMENSION, check_bounds, ColLabel, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, Position, PositionLabel, simulate_move, Tile, update_king_data};
 use crate::check::{check_checkmate, prevent_check};
 use crate::pieces::{init_piece_data, get_possible_moves_for_piece, PieceType, Team, KingData};
+use crate::util::load_image;
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
 const HALF_TILE: f32 = TILE_SIZE.x / 2.;
@@ -15,6 +16,7 @@ const NUM_COLUMNS: u8 = 8;
 mod pieces;
 mod board;
 mod check;
+mod util;
 
 fn main() {
     App::new()
@@ -99,10 +101,6 @@ pub struct ImageCache {
     black_rook: Handle<Image>,
     black_queen: Handle<Image>,
     black_king: Handle<Image>,
-}
-
-fn load_image(asset_server: &Res<AssetServer>, piece: &str) -> Handle<Image> {
-    asset_server.load(format!("../assets/pieces/{}.png", piece))
 }
 
 fn load_sprites(mut commands: Commands, asset_server: Res<AssetServer>) {

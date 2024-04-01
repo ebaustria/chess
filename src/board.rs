@@ -1,6 +1,7 @@
 use bevy::prelude::{ Color, Vec2 };
 use bevy::ecs::component::Component;
 use crate::{Entity, GameState, get_possible_moves_for_piece, HALF_TILE, KingData, Piece, PieceType, Team};
+use crate::util::transform_mouse_coords;
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
@@ -112,11 +113,6 @@ pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
     };
 
     (column_position, row + 1)
-}
-
-fn transform_mouse_coords(mouse_coords: Vec2) -> Vec2 {
-    let half_board: f32 =BOARD_DIMENSION * 0.5;
-    Vec2::from((mouse_coords.x - half_board, -(mouse_coords.y - half_board)))
 }
 
 pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
