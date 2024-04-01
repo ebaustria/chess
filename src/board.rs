@@ -4,6 +4,7 @@ use crate::{Entity, GameState, get_possible_moves_for_piece, HALF_TILE, KingData
 
 const TILE_LIGHT: Color = Color::BEIGE;
 const TILE_DARK: Color = Color::OLIVE;
+pub const BOARD_DIMENSION: f32 = 640.0;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Tile {
@@ -113,13 +114,20 @@ pub fn get_pos_label(row: u8, column: &u8) -> (ColLabel, u8) {
     (column_position, row + 1)
 }
 
+fn transform_mouse_coords(mouse_coords: Vec2) -> Vec2 {
+    let half_board: f32 =BOARD_DIMENSION * 0.5;
+    Vec2::from((mouse_coords.x - half_board, -(mouse_coords.y - half_board)))
+}
+
 pub fn check_bounds(x_coord: f32, y_coord: f32, mouse_coords: Vec2) -> bool {
     let right_bound: f32 = x_coord + HALF_TILE;
     let left_bound: f32 = x_coord - HALF_TILE;
     let upper_bound: f32 = y_coord + HALF_TILE;
     let lower_bound: f32 = y_coord - HALF_TILE;
 
-    if mouse_coords.x <= right_bound && mouse_coords.x >= left_bound && mouse_coords.y <= upper_bound && mouse_coords.y >= lower_bound {
+    let transformed_coords = transform_mouse_coords(mouse_coords);
+
+    if transformed_coords.x <= right_bound && transformed_coords.x >= left_bound && transformed_coords.y <= upper_bound && transformed_coords.y >= lower_bound {
         return true;
     }
     false
