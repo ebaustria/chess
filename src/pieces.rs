@@ -1,5 +1,8 @@
-use crate::{ColLabel, Piece, Position, PositionLabel, Tile};
+use bevy::asset::Handle;
 use bevy::ecs::component::Component;
+use bevy::prelude::{Image, Res};
+
+use crate::{ColLabel, ImageCache, Piece, Position, PositionLabel, Tile};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum PieceType {
@@ -23,42 +26,42 @@ pub struct KingData {
     pub(crate) available_moves: Vec<Position>,
 }
 
-pub fn init_piece_data(current_position: Position) -> (&'static str, Team, PieceType) {
+pub fn init_piece_data(image_cache: &Res<ImageCache>, current_position: Position) -> (Handle<Image>, Team, PieceType) {
     let Position { position_label, .. } = current_position;
     let PositionLabel { row_label, col_label } = position_label;
 
     if row_label == 7 {
-        return ("bP", Team::Black, PieceType::Pawn);
+        return (image_cache.black_pawn.clone(), Team::Black, PieceType::Pawn);
     }
 
     if row_label == 2 {
-        return ("wP", Team::White, PieceType::Pawn);
+        return (image_cache.white_pawn.clone(), Team::White, PieceType::Pawn);
     }
 
     if row_label == 8 {
         let data = match col_label {
-            ColLabel::A => ("bR", Team::Black, PieceType::Rook),
-            ColLabel::B => ("bN", Team::Black, PieceType::Knight),
-            ColLabel::C => ("bB", Team::Black, PieceType::Bishop),
-            ColLabel::D => ("bQ", Team::Black, PieceType::Queen),
-            ColLabel::E => ("bK", Team::Black, PieceType::King),
-            ColLabel::F => ("bB", Team::Black, PieceType::Bishop),
-            ColLabel::G => ("bN", Team::Black, PieceType::Knight),
-            ColLabel::H => ("bR", Team::Black, PieceType::Rook)
+            ColLabel::A => (image_cache.black_rook.clone(), Team::Black, PieceType::Rook),
+            ColLabel::B => (image_cache.black_knight.clone(), Team::Black, PieceType::Knight),
+            ColLabel::C => (image_cache.black_bishop.clone(), Team::Black, PieceType::Bishop),
+            ColLabel::D => (image_cache.black_queen.clone(), Team::Black, PieceType::Queen),
+            ColLabel::E => (image_cache.black_king.clone(), Team::Black, PieceType::King),
+            ColLabel::F => (image_cache.black_bishop.clone(), Team::Black, PieceType::Bishop),
+            ColLabel::G => (image_cache.black_knight.clone(), Team::Black, PieceType::Knight),
+            ColLabel::H => (image_cache.black_rook.clone(), Team::Black, PieceType::Rook)
         };
         return data;
     }
 
     
     match col_label {
-        ColLabel::A => ("wR", Team::White, PieceType::Rook),
-        ColLabel::B => ("wN", Team::White, PieceType::Knight),
-        ColLabel::C => ("wB", Team::White, PieceType::Bishop),
-        ColLabel::D => ("wQ", Team::White, PieceType::Queen),
-        ColLabel::E => ("wK", Team::White, PieceType::King),
-        ColLabel::F => ("wB", Team::White, PieceType::Bishop),
-        ColLabel::G => ("wN", Team::White, PieceType::Knight),
-        ColLabel::H => ("wR", Team::White, PieceType::Rook)
+        ColLabel::A => (image_cache.white_rook.clone(), Team::White, PieceType::Rook),
+        ColLabel::B => (image_cache.white_knight.clone(), Team::White, PieceType::Knight),
+        ColLabel::C => (image_cache.white_bishop.clone(), Team::White, PieceType::Bishop),
+        ColLabel::D => (image_cache.white_queen.clone(), Team::White, PieceType::Queen),
+        ColLabel::E => (image_cache.white_king.clone(), Team::White, PieceType::King),
+        ColLabel::F => (image_cache.white_bishop.clone(), Team::White, PieceType::Bishop),
+        ColLabel::G => (image_cache.white_knight.clone(), Team::White, PieceType::Knight),
+        ColLabel::H => (image_cache.white_rook.clone(), Team::White, PieceType::Rook)
     }
 }
 

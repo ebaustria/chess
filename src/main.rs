@@ -1,4 +1,5 @@
 use std::borrow::BorrowMut;
+use std::borrow::Borrow;
 use std::process;
 use bevy::{prelude::*, window::PresentMode};
 use bevy::utils::petgraph::visit::Walker;
@@ -18,13 +19,6 @@ mod check;
 
 fn main() {
     App::new()
-        // .insert_resource(Window {
-        //     title: "Chess".to_string(),
-        //     width: WINDOW_DIMENSION,
-        //     height: WINDOW_DIMENSION,
-        //     present_mode: PresentMode::Fifo,
-        //     ..default()
-        // })
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
@@ -43,11 +37,16 @@ fn main() {
                 ..default()
             })
          ))
-        .add_systems(Startup, setup)
+        .add_systems(
+            Startup,
+            (
+                load_sprites,
+                setup
+            ).chain()
+        )
         .add_systems(
             FixedUpdate,
             (
-                // update_mouse_coords_system,
                 select_piece_system,
                 cleanup_select_system,
                 prevent_check_system,
@@ -94,9 +93,46 @@ pub struct GameState {
     black_king_data: KingData,
 }
 
+#[derive(Resource)]
+pub struct ImageCache {
+    white_pawn: Handle<Image>,
+    white_knight: Handle<Image>,
+    white_bishop: Handle<Image>,
+    white_rook: Handle<Image>,
+    white_queen: Handle<Image>,
+    white_king: Handle<Image>,
+    black_pawn: Handle<Image>,
+    black_knight: Handle<Image>,
+    black_bishop: Handle<Image>,
+    black_rook: Handle<Image>,
+    black_queen: Handle<Image>,
+    black_king: Handle<Image>,
+}
+
+fn load_image(asset_server: &Res<AssetServer>, piece: &str) -> Handle<Image> {
+    asset_server.load(format!("../assets/pieces/{}.png", piece))
+}
+
+fn load_sprites(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(ImageCache {
+        white_pawn: load_image(asset_server.borrow(), "wP"),
+        white_knight: load_image(asset_server.borrow(), "wN"),
+        white_bishop: load_image(asset_server.borrow(), "wB"),
+        white_rook: load_image(asset_server.borrow(), "wR"),
+        white_queen: load_image(asset_server.borrow(), "wQ"),
+        white_king: load_image(asset_server.borrow(), "wK"),
+        black_pawn: load_image(asset_server.borrow(), "bP"),
+        black_knight: load_image(asset_server.borrow(), "bN"),
+        black_bishop: load_image(asset_server.borrow(), "bB"),
+        black_rook: load_image(asset_server.borrow(), "bR"),
+        black_queen: load_image(asset_server.borrow(), "bQ"),
+        black_king: load_image(asset_server.borrow(), "bK"),
+    });
+}
+
 fn setup(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    image_cache: Res<ImageCache>,
 ) {
     commands.insert_resource(Mouse {
         coords: Vec2::new(280., 280.),
@@ -141,14 +177,13 @@ fn setup(
             });
 
             if !(2..=5).contains(&row) {
-                let (name, team, piece_type) = init_piece_data(current_pos);
-                let path = format!("../assets/pieces/{}.png", name);
+                let (handle, team, piece_type) = init_piece_data(image_cache.borrow(), current_pos);
                 let piece_id: Entity = commands
                     .spawn((
                         SpriteBundle {
-                            texture: asset_server.load(&path),
+                            texture: handle,
                             transform: Transform {
-                                translation: tile_position.extend(0.0),
+                                translation: tile_position.extend(999.0),
                                 ..default()
                             },
                             ..default()
@@ -175,7 +210,6 @@ fn setup(
 
 fn select_piece_system(
     buttons: Res<ButtonInput<MouseButton>>,
-    // mouse_coords: Res<Mouse>,
     query_windows: Query<&Window, With<PrimaryWindow>>,
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
@@ -272,13 +306,10 @@ fn handle_move_system(
     if let Ok((entity, mut piece, mut transform)) = query.get_mut(game_state.selected_piece.unwrap()) {
         for position in &piece.available_moves {
             if check_bounds(position.coordinates.x, position.coordinates.y, mouse_pos.unwrap()) {
-                println!("CLICKED POSITION: {}", position.coordinates);
-                println!("PIECE POSITION: {}", piece.position.coordinates);
                 let delta: Vec2 = Vec2::new(position.coordinates.x - piece.position.coordinates.x, position.coordinates.y - piece.position.coordinates.y);
-                println!("DELTA: {}", delta);
                 transform.translation.x += delta.x;
                 transform.translation.y += delta.y;
-                transform.translation.z = 0f32;
+                transform.translation.z = 999f32;
 
                 let (old_row, old_col) = index_for_pos(piece.position.position_label);
                 let (new_row, new_col) = index_for_pos(position.position_label);
@@ -318,30 +349,3 @@ fn cleanup_select_system(query: Query<(Entity, &mut Light)>, mut commands: Comma
         }
     }
 }
-
-// fn update_mouse_coords_system(
-//     mut cursor_moved_events: EventReader<CursorMoved>,
-//     mut mouse_coords: ResMut<Mouse>,
-//     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>
-// ) {
-//     for event in cursor_moved_events.read() {
-//         println!("MOUSE COORDS UNTRANSFORMED: {}", event.position);
-//         let (camera, camera_transform) = q_camera.single();
-//
-//         // get the size of the window
-//         let window_size = Vec2::new(BOARD_DIMENSION, BOARD_DIMENSION);
-//
-//         // convert screen position [0..resolution] to ndc [-1..1] (gpu coordinates)
-//         let ndc = (event.position / window_size) * 2.0 - Vec2::ONE;
-//
-//         // matrix for undoing the projection and camera transform
-//         let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
-//
-//         // use it to convert ndc to world-space coordinates
-//         let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
-//
-//         // reduce it to a 2D value
-//         mouse_coords.coords = world_pos.truncate();
-//         println!("MOUSE COORDS: {}", mouse_coords.coords);
-//     }
-// }
