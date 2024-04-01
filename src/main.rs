@@ -2,7 +2,6 @@ use std::borrow::BorrowMut;
 use std::borrow::Borrow;
 use std::process;
 use bevy::{prelude::*, window::PresentMode};
-use bevy::utils::petgraph::visit::Walker;
 use bevy::window::{PrimaryWindow, WindowTheme};
 use crate::board::{BOARD_DIMENSION, check_bounds, ColLabel, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, Position, PositionLabel, simulate_move, Tile, update_king_data};
 use crate::check::{check_checkmate, prevent_check};
@@ -19,8 +18,7 @@ mod check;
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "Chess".into(),
                     name: Some("chess.app".into()),
@@ -35,8 +33,7 @@ fn main() {
                     ..default()
                 }),
                 ..default()
-            })
-         ))
+            }))
         .add_systems(
             Startup,
             (
@@ -63,11 +60,6 @@ struct MainCamera;
 
 #[derive(Component)]
 pub struct Selected;
-
-#[derive(Resource)]
-struct Mouse {
-    coords: Vec2,
-}
 
 #[derive(Component)]
 struct Light {
@@ -134,10 +126,6 @@ fn setup(
     mut commands: Commands,
     image_cache: Res<ImageCache>,
 ) {
-    commands.insert_resource(Mouse {
-        coords: Vec2::new(280., 280.),
-    });
-
     let mut game_state = GameState {
         turn: Team::White,
         highlight_coords: Vec2::ZERO,
