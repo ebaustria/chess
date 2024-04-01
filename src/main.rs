@@ -278,6 +278,10 @@ fn prevent_check_system(
 }
 
 fn enforce_checkmate_system(game_state: Res<GameState>, query_unselected: Query<(Entity, &mut Piece), Without<Selected>>) {
+    if game_state.selected_piece.is_some() {
+        return;
+    }
+
     let is_checkmate: bool = if game_state.turn == Team::White {
         check_checkmate(game_state.turn, game_state.white_king_data.position, game_state.board, query_unselected)
     } else {
