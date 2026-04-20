@@ -307,8 +307,8 @@ fn handle_move_system(
                 let new_tile: &mut Tile = &mut game_state.board[new_row][new_col];
 
                 // capture piece if tile contains enemy
-                if new_tile.piece.is_some() {
-                    commands.entity(new_tile.piece.unwrap()).despawn();
+                if let Some(piece) = new_tile.piece {
+                    commands.entity(piece).despawn();
                 }
 
                 new_tile.team = piece.team;
