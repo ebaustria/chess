@@ -4,7 +4,7 @@ use bevy::math::Vec2;
 use bevy::prelude::{Image, Res};
 
 pub fn load_image(asset_server: &Res<AssetServer>, piece: &str) -> Handle<Image> {
-    asset_server.load(format!("../assets/pieces/{}.png", piece))
+    asset_server.load(format!("pieces/{}.png", piece))
 }
 
 pub fn transform_mouse_coords(mouse_coords: Vec2) -> Vec2 {

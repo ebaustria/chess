@@ -3,10 +3,11 @@ use crate::{
     get_possible_moves_for_piece, Entity, GameState, KingData, Piece, PieceType, Team, HALF_TILE,
 };
 use bevy::ecs::component::Component;
+use bevy::color::palettes::css;
 use bevy::prelude::{Color, Vec2};
 
-const TILE_LIGHT: Color = Color::BEIGE;
-const TILE_DARK: Color = Color::OLIVE;
+const TILE_LIGHT: Color = Color::Srgba(css::BEIGE);
+const TILE_DARK: Color = Color::Srgba(css::OLIVE);
 pub const BOARD_DIMENSION: f32 = 640.0;
 
 #[derive(Debug, Copy, Clone)]

@@ -6,7 +6,7 @@ use crate::board::{
 use crate::check::{check_checkmate, prevent_check};
 use crate::pieces::{get_possible_moves_for_piece, init_piece_data, KingData, PieceType, Team};
 use crate::util::load_image;
-use bevy::window::{PrimaryWindow, WindowTheme};
+use bevy::window::{PrimaryWindow, WindowResolution, WindowTheme};
 use bevy::{prelude::*, window::PresentMode};
 use std::borrow::Borrow;
 use std::borrow::BorrowMut;
@@ -28,7 +28,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "Chess".into(),
                 name: Some("chess.app".into()),
-                resolution: (BOARD_DIMENSION, BOARD_DIMENSION).into(),
+                resolution: WindowResolution::new(BOARD_DIMENSION as u32, BOARD_DIMENSION as u32),
                 present_mode: PresentMode::AutoVsync,
                 prevent_default_event_handling: false,
                 window_theme: Some(WindowTheme::Dark),
@@ -52,7 +52,7 @@ fn main() {
             )
                 .chain(),
         )
-        .add_systems(Update, bevy::window::close_on_esc)
+        .add_systems(Update, bevy::window::close_when_requested)
         .run();
 }
 
@@ -129,7 +129,7 @@ fn setup(mut commands: Commands, image_cache: Res<ImageCache>) {
         black_king_data: default_king_data(),
     };
 
-    commands.spawn(Camera2dBundle::default()).insert(MainCamera);
+    commands.spawn(Camera2d::default()).insert(MainCamera);
 
     for row in 0..NUM_ROWS {
         for column in 0..NUM_COLUMNS {
@@ -150,31 +150,24 @@ fn setup(mut commands: Commands, image_cache: Res<ImageCache>) {
             };
             // println!("Current position: {:?}", current_pos);
 
-            commands.spawn(SpriteBundle {
-                sprite: Sprite {
+            commands.spawn((
+                Sprite {
                     color: get_tile_color(&row, &column),
                     ..default()
                 },
-                transform: Transform {
+                Transform {
                     translation: tile_position.extend(0.0),
                     scale: Vec3::new(TILE_SIZE.x, TILE_SIZE.y, 1.0),
                     ..default()
                 },
-                ..default()
-            });
+            ));
 
             if !(2..=5).contains(&row) {
                 let (handle, team, piece_type) = init_piece_data(image_cache.borrow(), current_pos);
                 let piece_id: Entity = commands
                     .spawn((
-                        SpriteBundle {
-                            texture: handle,
-                            transform: Transform {
-                                translation: tile_position.extend(999.0),
-                                ..default()
-                            },
-                            ..default()
-                        },
+                        Sprite::from_image(handle),
+                        Transform::from_translation(tile_position.extend(999.0)),
                         Piece {
                             // name: name.to_string(),
                             position: current_pos,
@@ -212,7 +205,7 @@ fn select_piece_system(
     mut query_unselected: Query<(Entity, &mut Piece), Without<Selected>>,
     mut query_selected: Query<Entity, With<Selected>>,
 ) {
-    let mouse_pos = query_windows.single().cursor_position();
+    let mouse_pos = query_windows.single().unwrap().cursor_position();
 
     if mouse_pos.is_none() {
         return;
@@ -227,18 +220,14 @@ fn select_piece_system(
                 && game_state.highlight_coords != piece_coords
             {
                 commands.spawn((
-                    SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::rgba(0.12, 1.0, 0.06, 0.7),
+                    (
+                        Sprite {
+                            color: Color::srgba(0.12, 1.0, 0.06, 0.7),
+                            custom_size: Some(Vec2::new(TILE_SIZE.x, TILE_SIZE.y)),
                             ..default()
                         },
-                        transform: Transform {
-                            translation: piece_coords.extend(0.0),
-                            scale: Vec3::new(TILE_SIZE.x, TILE_SIZE.y, 1.0),
-                            ..default()
-                        },
-                        ..default()
-                    },
+                        Transform::from_translation(piece_coords.extend(0.0)),
+                    ),
                     Light {
                         coordinates: piece_coords,
                     },
@@ -322,7 +311,7 @@ fn handle_move_system(
     mut query: Query<(Entity, &mut Piece, &mut Transform), With<Selected>>,
     mut game_state: ResMut<GameState>,
 ) {
-    let mouse_pos = query_windows.single().cursor_position();
+    let mouse_pos = query_windows.single().unwrap().cursor_position();
     if mouse_pos.is_none()
         || !buttons.just_pressed(MouseButton::Left)
         || game_state.selected_piece.is_none()
