@@ -2,8 +2,8 @@ use crate::util::transform_mouse_coords;
 use crate::{
     get_possible_moves_for_piece, Entity, GameState, KingData, Piece, PieceType, Team, HALF_TILE,
 };
-use bevy::ecs::component::Component;
 use bevy::color::palettes::css;
+use bevy::ecs::component::Component;
 use bevy::prelude::{Color, Vec2};
 
 const TILE_LIGHT: Color = Color::Srgba(css::BEIGE);

@@ -2,7 +2,8 @@ use bevy::asset::Handle;
 use bevy::ecs::component::Component;
 use bevy::prelude::{Image, Res};
 
-use crate::{ColLabel, ImageCache, Piece, Position, PositionLabel, Tile};
+use crate::game::ImageCache;
+use crate::{ColLabel, Piece, Position, PositionLabel, Tile};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum PieceType {

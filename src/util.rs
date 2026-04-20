@@ -1,4 +1,4 @@
-use crate::board::BOARD_DIMENSION;
+use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 use bevy::asset::{AssetServer, Handle};
 use bevy::math::Vec2;
 use bevy::prelude::{Image, Res};
@@ -8,6 +8,7 @@ pub fn load_image(asset_server: &Res<AssetServer>, piece: &str) -> Handle<Image>
 }
 
 pub fn transform_mouse_coords(mouse_coords: Vec2) -> Vec2 {
-    let half_board: f32 = BOARD_DIMENSION * 0.5;
-    Vec2::from((mouse_coords.x - half_board, -(mouse_coords.y - half_board)))
+    let half_width: f32 = WINDOW_WIDTH as f32 * 0.5;
+    let half_height: f32 = WINDOW_HEIGHT as f32 * 0.5;
+    Vec2::from((mouse_coords.x - half_width, -(mouse_coords.y - half_height)))
 }

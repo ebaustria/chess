@@ -1,63 +1,27 @@
-use crate::board::{
-    check_bounds, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board,
-    init_king_positions, simulate_move, update_king_data, ColLabel, Position, PositionLabel, Tile,
-    BOARD_DIMENSION,
-};
-use crate::check::{check_checkmate, prevent_check};
-use crate::pieces::{get_possible_moves_for_piece, init_piece_data, KingData, PieceType, Team};
-use crate::util::load_image;
-use bevy::window::{PrimaryWindow, WindowResolution, WindowTheme};
+use crate::board::{simulate_move, ColLabel, Position, PositionLabel, Tile};
+use crate::pieces::{get_possible_moves_for_piece, KingData, PieceType, Team};
+use bevy::window::{WindowResolution, WindowTheme};
 use bevy::{prelude::*, window::PresentMode};
-use std::borrow::Borrow;
-use std::borrow::BorrowMut;
-use std::process;
+
+#[derive(Resource, Debug, Component, PartialEq, Eq, Clone, Copy)]
+enum DisplayQuality {
+    Low,
+    Medium,
+    High,
+}
+
+#[derive(Resource, Debug, Component, PartialEq, Eq, Clone, Copy)]
+struct Volume(u32);
+
+const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
+
+const WINDOW_WIDTH: u32 = 1080;
+const WINDOW_HEIGHT: u32 = 720;
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
 const HALF_TILE: f32 = TILE_SIZE.x / 2.;
 const NUM_ROWS: u8 = 8;
 const NUM_COLUMNS: u8 = 8;
-
-mod board;
-mod check;
-mod pieces;
-mod util;
-
-fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Chess".into(),
-                name: Some("chess.app".into()),
-                resolution: WindowResolution::new(BOARD_DIMENSION as u32, BOARD_DIMENSION as u32),
-                present_mode: PresentMode::AutoVsync,
-                prevent_default_event_handling: false,
-                window_theme: Some(WindowTheme::Dark),
-                enabled_buttons: bevy::window::EnabledButtons {
-                    maximize: false,
-                    ..Default::default()
-                },
-                ..default()
-            }),
-            ..default()
-        }))
-        .add_systems(Startup, (load_sprites, setup).chain())
-        .add_systems(
-            FixedUpdate,
-            (
-                select_piece_system,
-                cleanup_select_system,
-                prevent_check_system,
-                handle_move_system,
-                enforce_checkmate_system,
-            )
-                .chain(),
-        )
-        .add_systems(Update, bevy::window::close_when_requested)
-        .run();
-}
-
-#[derive(Component)]
-struct MainCamera;
 
 #[derive(Component)]
 pub struct Selected;
@@ -86,299 +50,349 @@ pub struct GameState {
     black_king_data: KingData,
 }
 
-#[derive(Resource)]
-pub struct ImageCache {
-    white_pawn: Handle<Image>,
-    white_knight: Handle<Image>,
-    white_bishop: Handle<Image>,
-    white_rook: Handle<Image>,
-    white_queen: Handle<Image>,
-    white_king: Handle<Image>,
-    black_pawn: Handle<Image>,
-    black_knight: Handle<Image>,
-    black_bishop: Handle<Image>,
-    black_rook: Handle<Image>,
-    black_queen: Handle<Image>,
-    black_king: Handle<Image>,
+mod board;
+mod check;
+mod game;
+mod pieces;
+mod util;
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Chess".into(),
+                name: Some("chess.app".into()),
+                resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
+                resizable: false,
+                present_mode: PresentMode::AutoVsync,
+                prevent_default_event_handling: false,
+                window_theme: Some(WindowTheme::Dark),
+                enabled_buttons: bevy::window::EnabledButtons {
+                    maximize: false,
+                    ..Default::default()
+                },
+                ..default()
+            }),
+            ..default()
+        }))
+        .insert_resource(DisplayQuality::Medium)
+        .insert_resource(Volume(7))
+        .init_state::<game::GameStatus>()
+        .add_systems(Startup, setup)
+        .add_plugins((splash::splash_plugin, menu::menu_plugin, game::game_plugin))
+        .run();
 }
 
-fn load_sprites(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.insert_resource(ImageCache {
-        white_pawn: load_image(asset_server.borrow(), "wP"),
-        white_knight: load_image(asset_server.borrow(), "wN"),
-        white_bishop: load_image(asset_server.borrow(), "wB"),
-        white_rook: load_image(asset_server.borrow(), "wR"),
-        white_queen: load_image(asset_server.borrow(), "wQ"),
-        white_king: load_image(asset_server.borrow(), "wK"),
-        black_pawn: load_image(asset_server.borrow(), "bP"),
-        black_knight: load_image(asset_server.borrow(), "bN"),
-        black_bishop: load_image(asset_server.borrow(), "bB"),
-        black_rook: load_image(asset_server.borrow(), "bR"),
-        black_queen: load_image(asset_server.borrow(), "bQ"),
-        black_king: load_image(asset_server.borrow(), "bK"),
-    });
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2d);
 }
 
-fn setup(mut commands: Commands, image_cache: Res<ImageCache>) {
-    let mut game_state = GameState {
-        turn: Team::White,
-        highlight_coords: Vec2::ZERO,
-        selected_piece: None,
-        board: init_board(),
-        white_king_data: default_king_data(),
-        black_king_data: default_king_data(),
-    };
+mod splash {
+    use bevy::prelude::*;
 
-    commands.spawn(Camera2d::default()).insert(MainCamera);
+    use super::game::GameStatus;
 
-    for row in 0..NUM_ROWS {
-        for column in 0..NUM_COLUMNS {
-            let offset: f32 = -(BOARD_DIMENSION / 2.) + HALF_TILE;
-            let tile_position = Vec2::new(
-                offset + column as f32 * TILE_SIZE.x,
-                offset + row as f32 * TILE_SIZE.y,
-            );
+    pub fn splash_plugin(app: &mut App) {
+        app.add_systems(OnEnter(GameStatus::Splash), splash_setup)
+            .add_systems(Update, countdown.run_if(in_state(GameStatus::Splash)));
+    }
 
-            let (col_label, row_label) = get_pos_label(row, &column);
-            let position_label = PositionLabel {
-                col_label,
-                row_label,
-            };
-            let current_pos = Position {
-                position_label,
-                coordinates: tile_position,
-            };
-            // println!("Current position: {:?}", current_pos);
+    #[derive(Component)]
+    struct OnSplashScreen;
 
-            commands.spawn((
-                Sprite {
-                    color: get_tile_color(&row, &column),
+    #[derive(Resource, Deref, DerefMut)]
+    struct SplashTimer(Timer);
+
+    fn splash_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+        let icon = asset_server.load("pieces/bP.png");
+        commands.spawn((
+            DespawnOnExit(GameStatus::Splash),
+            Node {
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                width: percent(100),
+                height: percent(100),
+                ..default()
+            },
+            OnSplashScreen,
+            children![(
+                ImageNode::new(icon),
+                Node {
+                    width: px(200),
                     ..default()
                 },
-                Transform {
-                    translation: tile_position.extend(0.0),
-                    scale: Vec3::new(TILE_SIZE.x, TILE_SIZE.y, 1.0),
-                    ..default()
-                },
-            ));
+            )],
+        ));
+        commands.insert_resource(SplashTimer(Timer::from_seconds(1.0, TimerMode::Once)));
+    }
 
-            if !(2..=5).contains(&row) {
-                let (handle, team, piece_type) = init_piece_data(image_cache.borrow(), current_pos);
-                let piece_id: Entity = commands
-                    .spawn((
-                        Sprite::from_image(handle),
-                        Transform::from_translation(tile_position.extend(999.0)),
-                        Piece {
-                            // name: name.to_string(),
-                            position: current_pos,
-                            team,
-                            piece_type,
-                            available_moves: Vec::new(),
-                        },
-                    ))
-                    .id();
-
-                init_king_positions(piece_type, team, &mut game_state, current_pos);
-                game_state.board[row as usize][column as usize] = Tile {
-                    position: current_pos,
-                    team,
-                    piece: Option::from(piece_id),
-                };
-            } else {
-                game_state.board[row as usize][column as usize] = Tile {
-                    position: current_pos,
-                    team: Team::None,
-                    piece: None,
-                };
-            }
+    fn countdown(
+        mut game_state: ResMut<NextState<GameStatus>>,
+        time: Res<Time>,
+        mut timer: ResMut<SplashTimer>,
+    ) {
+        if timer.tick(time.delta()).is_finished() {
+            game_state.set(GameStatus::Menu);
         }
     }
-
-    commands.insert_resource(game_state);
 }
 
-fn select_piece_system(
-    buttons: Res<ButtonInput<MouseButton>>,
-    query_windows: Query<&Window, With<PrimaryWindow>>,
-    mut commands: Commands,
-    mut game_state: ResMut<GameState>,
-    mut query_unselected: Query<(Entity, &mut Piece), Without<Selected>>,
-    mut query_selected: Query<Entity, With<Selected>>,
-) {
-    let mouse_pos = query_windows.single().unwrap().cursor_position();
+mod menu {
+    use bevy::{app::AppExit, color::palettes::css::CRIMSON, ecs::spawn::SpawnIter, prelude::*};
 
-    if mouse_pos.is_none() {
-        return;
+    use super::{game::GameStatus, TEXT_COLOR};
+
+    pub fn menu_plugin(app: &mut App) {
+        app.init_state::<MenuState>()
+            .add_systems(OnEnter(GameStatus::Menu), menu_setup)
+            .add_systems(OnEnter(MenuState::Main), main_menu_setup)
+            .add_systems(OnEnter(MenuState::Settings), settings_menu_setup)
+            .add_systems(
+                Update,
+                (menu_action, button_system).run_if(in_state(GameStatus::Menu)),
+            );
     }
 
-    if buttons.just_pressed(MouseButton::Left) {
-        for (entity, mut piece) in query_unselected.iter_mut() {
-            let piece_coords = piece.position.coordinates;
-            let in_bounds: bool = check_bounds(piece_coords.x, piece_coords.y, mouse_pos.unwrap());
-            if in_bounds
-                && piece.team == game_state.turn
-                && game_state.highlight_coords != piece_coords
-            {
-                commands.spawn((
+    #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
+    enum MenuState {
+        Main,
+        Settings,
+        SettingsDisplay,
+        SettingsSound,
+        #[default]
+        Disabled,
+    }
+
+    fn menu_setup(mut menu_state: ResMut<NextState<MenuState>>) {
+        menu_state.set(MenuState::Main);
+    }
+
+    fn main_menu_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+        let button_node = Node {
+            width: px(300),
+            height: px(65),
+            margin: UiRect::all(px(20)),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        };
+        let button_icon_node = Node {
+            width: px(30),
+            position_type: PositionType::Absolute,
+            left: px(10),
+            ..default()
+        };
+        let button_text_font = TextFont {
+            font_size: 33.0,
+            ..default()
+        };
+
+        let right_icon = asset_server.load("pieces/bB.png");
+        let wrench_icon = asset_server.load("pieces/wK.png");
+        let exit_icon = asset_server.load("pieces/wR.png");
+
+        commands.spawn((
+            DespawnOnExit(MenuState::Main),
+            Node {
+                width: percent(100),
+                height: percent(100),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            OnMainMenuScreen,
+            children![(
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                BackgroundColor(CRIMSON.into()),
+                children![
                     (
-                        Sprite {
-                            color: Color::srgba(0.12, 1.0, 0.06, 0.7),
-                            custom_size: Some(Vec2::new(TILE_SIZE.x, TILE_SIZE.y)),
+                        Text::new("Bevy Game Menu UI"),
+                        TextFont {
+                            font_size: 67.0,
                             ..default()
                         },
-                        Transform::from_translation(piece_coords.extend(0.0)),
+                        TextColor(TEXT_COLOR),
+                        Node {
+                            margin: UiRect::all(px(50)),
+                            ..default()
+                        },
                     ),
-                    Light {
-                        coordinates: piece_coords,
-                    },
-                ));
-                game_state.highlight_coords = piece_coords;
-                game_state.selected_piece = Option::from(entity);
-                for ent in query_selected.iter_mut() {
-                    commands.entity(ent).remove::<Selected>();
-                }
-                commands.entity(entity).insert(Selected);
-                piece.available_moves = get_possible_moves_for_piece(&piece, &game_state.board);
-                break;
-            }
-        }
+                    (
+                        Button,
+                        button_node.clone(),
+                        BackgroundColor(NORMAL_BUTTON),
+                        MenuButtonAction::Play,
+                        children![
+                            (ImageNode::new(right_icon), button_icon_node.clone()),
+                            (
+                                Text::new("New Game"),
+                                button_text_font.clone(),
+                                TextColor(TEXT_COLOR),
+                            ),
+                        ]
+                    ),
+                    (
+                        Button,
+                        button_node.clone(),
+                        BackgroundColor(NORMAL_BUTTON),
+                        MenuButtonAction::Settings,
+                        children![
+                            (ImageNode::new(wrench_icon), button_icon_node.clone()),
+                            (
+                                Text::new("Settings"),
+                                button_text_font.clone(),
+                                TextColor(TEXT_COLOR),
+                            ),
+                        ]
+                    ),
+                    (
+                        Button,
+                        button_node,
+                        BackgroundColor(NORMAL_BUTTON),
+                        MenuButtonAction::Quit,
+                        children![
+                            (ImageNode::new(exit_icon), button_icon_node),
+                            (Text::new("Quit"), button_text_font, TextColor(TEXT_COLOR),),
+                        ]
+                    ),
+                ]
+            )],
+        ));
     }
-}
 
-fn prevent_check_system(
-    mut query_selected: Query<&mut Piece, With<Selected>>,
-    query_unselected: Query<&mut Piece, Without<Selected>>,
-    game_state: Res<GameState>,
-) {
-    if game_state.selected_piece.is_none() {
-        return;
-    }
-
-    let selected_entity: Entity = game_state.selected_piece.unwrap();
-    if let Ok(mut selected_piece) = query_selected.get_mut(selected_entity) {
-        let king_pos: Position = if game_state.turn == Team::White {
-            game_state.white_king_data.position
-        } else {
-            game_state.black_king_data.position
+    fn settings_menu_setup(mut commands: Commands) {
+        let button_node = Node {
+            width: px(200),
+            height: px(65),
+            margin: UiRect::all(px(20)),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
         };
-        for enemy_piece in query_unselected.iter() {
-            prevent_check(
-                selected_piece.borrow_mut(),
-                selected_entity,
-                enemy_piece,
-                king_pos,
-                &game_state,
-            );
-        }
-    }
-}
 
-fn enforce_checkmate_system(
-    game_state: Res<GameState>,
-    query_unselected: Query<(Entity, &mut Piece), Without<Selected>>,
-) {
-    if game_state.selected_piece.is_some() {
-        return;
-    }
+        let button_text_style = (
+            TextFont {
+                font_size: 33.0,
+                ..default()
+            },
+            TextColor(TEXT_COLOR),
+        );
 
-    let is_checkmate: bool = if game_state.turn == Team::White {
-        check_checkmate(
-            game_state.turn,
-            game_state.white_king_data.position,
-            game_state.board,
-            query_unselected,
-        )
-    } else {
-        check_checkmate(
-            game_state.turn,
-            game_state.black_king_data.position,
-            game_state.board,
-            query_unselected,
-        )
-    };
-
-    if is_checkmate {
-        println!("Checkmate!");
-        process::exit(0x00);
-    };
-}
-
-fn handle_move_system(
-    buttons: Res<ButtonInput<MouseButton>>,
-    // mouse_coords: Res<Mouse>,
-    query_windows: Query<&Window, With<PrimaryWindow>>,
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut Piece, &mut Transform), With<Selected>>,
-    mut game_state: ResMut<GameState>,
-) {
-    let mouse_pos = query_windows.single().unwrap().cursor_position();
-    if mouse_pos.is_none()
-        || !buttons.just_pressed(MouseButton::Left)
-        || game_state.selected_piece.is_none()
-    {
-        return;
+        commands.spawn((
+            DespawnOnExit(MenuState::Settings),
+            Node {
+                width: percent(100),
+                height: percent(100),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            OnSettingsMenuScreen,
+            children![(
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                BackgroundColor(CRIMSON.into()),
+                Children::spawn(SpawnIter(
+                    [
+                        (MenuButtonAction::SettingsDisplay, "Display"),
+                        (MenuButtonAction::SettingsSound, "Sound"),
+                        (MenuButtonAction::BackToMainMenu, "Back"),
+                    ]
+                    .into_iter()
+                    .map(move |(action, text)| {
+                        (
+                            Button,
+                            button_node.clone(),
+                            BackgroundColor(NORMAL_BUTTON),
+                            action,
+                            children![(Text::new(text), button_text_style.clone())],
+                        )
+                    })
+                ))
+            )],
+        ));
     }
 
-    if let Ok((entity, mut piece, mut transform)) =
-        query.get_mut(game_state.selected_piece.unwrap())
-    {
-        for position in &piece.available_moves {
-            if check_bounds(
-                position.coordinates.x,
-                position.coordinates.y,
-                mouse_pos.unwrap(),
-            ) {
-                let delta: Vec2 = Vec2::new(
-                    position.coordinates.x - piece.position.coordinates.x,
-                    position.coordinates.y - piece.position.coordinates.y,
-                );
-                transform.translation.x += delta.x;
-                transform.translation.y += delta.y;
-                transform.translation.z = 999f32;
-
-                let (old_row, old_col) = index_for_pos(piece.position.position_label);
-                let (new_row, new_col) = index_for_pos(position.position_label);
-                let new_pos: Position = game_state.board[new_row][new_col].position;
-                update_king_data(&piece, &mut game_state, new_pos);
-                let new_tile: &mut Tile = &mut game_state.board[new_row][new_col];
-
-                // capture piece if tile contains enemy
-                if new_tile.piece.is_some() {
-                    commands.entity(new_tile.piece.unwrap()).despawn();
+    fn menu_action(
+        interaction_query: Query<
+            (&Interaction, &MenuButtonAction),
+            (Changed<Interaction>, With<Button>),
+        >,
+        mut app_exit_writer: MessageWriter<AppExit>,
+        mut menu_state: ResMut<NextState<MenuState>>,
+        mut game_state: ResMut<NextState<GameStatus>>,
+    ) {
+        for (interaction, menu_button_action) in &interaction_query {
+            if *interaction == Interaction::Pressed {
+                match menu_button_action {
+                    MenuButtonAction::Quit => {
+                        app_exit_writer.write(AppExit::Success);
+                    }
+                    MenuButtonAction::Play => {
+                        game_state.set(GameStatus::Game);
+                        menu_state.set(MenuState::Disabled);
+                    }
+                    MenuButtonAction::Settings => menu_state.set(MenuState::Settings),
+                    MenuButtonAction::SettingsDisplay => {
+                        menu_state.set(MenuState::SettingsDisplay);
+                    }
+                    MenuButtonAction::SettingsSound => {
+                        menu_state.set(MenuState::SettingsSound);
+                    }
+                    MenuButtonAction::BackToMainMenu => menu_state.set(MenuState::Main),
+                    MenuButtonAction::BackToSettings => {
+                        menu_state.set(MenuState::Settings);
+                    }
                 }
-
-                new_tile.team = piece.team;
-                new_tile.piece = Option::from(entity);
-
-                game_state.board[old_row][old_col].team = Team::None;
-                game_state.board[old_row][old_col].piece = None;
-
-                game_state.highlight_coords = Vec2::ZERO;
-                game_state.selected_piece = None;
-                game_state.turn = if game_state.turn == Team::White {
-                    Team::Black
-                } else {
-                    Team::White
-                };
-
-                piece.position = *position;
-                piece.available_moves = Vec::new();
-                commands.entity(entity).remove::<Selected>();
-                break;
             }
         }
     }
-}
 
-fn cleanup_select_system(
-    query: Query<(Entity, &mut Light)>,
-    mut commands: Commands,
-    game_state: Res<GameState>,
-) {
-    for (entity, highlight) in query.iter() {
-        if highlight.coordinates != game_state.highlight_coords {
-            commands.entity(entity).despawn();
-            break;
+    fn button_system(
+        mut interaction_query: Query<
+            (&Interaction, &mut BackgroundColor, Option<&SelectedOption>),
+            (Changed<Interaction>, With<Button>),
+        >,
+    ) {
+        for (interaction, mut background_color, selected) in &mut interaction_query {
+            *background_color = match (*interaction, selected) {
+                (Interaction::Pressed, _) | (Interaction::None, Some(_)) => PRESSED_BUTTON.into(),
+                (Interaction::Hovered, Some(_)) => HOVERED_PRESSED_BUTTON.into(),
+                (Interaction::Hovered, None) => HOVERED_BUTTON.into(),
+                (Interaction::None, None) => NORMAL_BUTTON.into(),
+            }
         }
     }
+
+    #[derive(Component)]
+    struct OnMainMenuScreen;
+
+    #[derive(Component)]
+    struct OnSettingsMenuScreen;
+
+    #[derive(Component)]
+    struct SelectedOption;
+
+    #[derive(Component)]
+    enum MenuButtonAction {
+        Play,
+        Settings,
+        SettingsDisplay,
+        SettingsSound,
+        BackToMainMenu,
+        BackToSettings,
+        Quit,
+    }
+
+    const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
+    const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
+    const HOVERED_PRESSED_BUTTON: Color = Color::srgb(0.25, 0.65, 0.25);
+    const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 }
