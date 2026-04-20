@@ -1,7 +1,7 @@
+use crate::board::BOARD_DIMENSION;
 use bevy::asset::{AssetServer, Handle};
 use bevy::math::Vec2;
 use bevy::prelude::{Image, Res};
-use crate::board::BOARD_DIMENSION;
 
 pub fn load_image(asset_server: &Res<AssetServer>, piece: &str) -> Handle<Image> {
     asset_server.load(format!("../assets/pieces/{}.png", piece))

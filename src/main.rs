@@ -1,48 +1,46 @@
-use std::borrow::BorrowMut;
-use std::borrow::Borrow;
-use std::process;
-use bevy::{prelude::*, window::PresentMode};
-use bevy::window::{PrimaryWindow, WindowTheme};
-use crate::board::{BOARD_DIMENSION, check_bounds, ColLabel, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, Position, PositionLabel, simulate_move, Tile, update_king_data};
+use crate::board::{
+    check_bounds, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board,
+    init_king_positions, simulate_move, update_king_data, ColLabel, Position, PositionLabel, Tile,
+    BOARD_DIMENSION,
+};
 use crate::check::{check_checkmate, prevent_check};
-use crate::pieces::{init_piece_data, get_possible_moves_for_piece, PieceType, Team, KingData};
+use crate::pieces::{get_possible_moves_for_piece, init_piece_data, KingData, PieceType, Team};
 use crate::util::load_image;
+use bevy::window::{PrimaryWindow, WindowTheme};
+use bevy::{prelude::*, window::PresentMode};
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
+use std::process;
 
 const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
 const HALF_TILE: f32 = TILE_SIZE.x / 2.;
 const NUM_ROWS: u8 = 8;
 const NUM_COLUMNS: u8 = 8;
 
-mod pieces;
 mod board;
 mod check;
+mod pieces;
 mod util;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "Chess".into(),
-                    name: Some("chess.app".into()),
-                    resolution: (BOARD_DIMENSION, BOARD_DIMENSION).into(),
-                    present_mode: PresentMode::AutoVsync,
-                    prevent_default_event_handling: false,
-                    window_theme: Some(WindowTheme::Dark),
-                    enabled_buttons: bevy::window::EnabledButtons {
-                        maximize: false,
-                        ..Default::default()
-                    },
-                    ..default()
-                }),
+            primary_window: Some(Window {
+                title: "Chess".into(),
+                name: Some("chess.app".into()),
+                resolution: (BOARD_DIMENSION, BOARD_DIMENSION).into(),
+                present_mode: PresentMode::AutoVsync,
+                prevent_default_event_handling: false,
+                window_theme: Some(WindowTheme::Dark),
+                enabled_buttons: bevy::window::EnabledButtons {
+                    maximize: false,
+                    ..Default::default()
+                },
                 ..default()
-            }))
-        .add_systems(
-            Startup,
-            (
-                load_sprites,
-                setup
-            ).chain()
-        )
+            }),
+            ..default()
+        }))
+        .add_systems(Startup, (load_sprites, setup).chain())
         .add_systems(
             FixedUpdate,
             (
@@ -50,8 +48,9 @@ fn main() {
                 cleanup_select_system,
                 prevent_check_system,
                 handle_move_system,
-                enforce_checkmate_system
-            ).chain()
+                enforce_checkmate_system,
+            )
+                .chain(),
         )
         .add_systems(Update, bevy::window::close_on_esc)
         .run();
@@ -120,10 +119,7 @@ fn load_sprites(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 }
 
-fn setup(
-    mut commands: Commands,
-    image_cache: Res<ImageCache>,
-) {
+fn setup(mut commands: Commands, image_cache: Res<ImageCache>) {
     let mut game_state = GameState {
         turn: Team::White,
         highlight_coords: Vec2::ZERO,
@@ -140,13 +136,18 @@ fn setup(
             let offset: f32 = -(BOARD_DIMENSION / 2.) + HALF_TILE;
             let tile_position = Vec2::new(
                 offset + column as f32 * TILE_SIZE.x,
-                offset + row as f32 * TILE_SIZE.y
+                offset + row as f32 * TILE_SIZE.y,
             );
 
-
             let (col_label, row_label) = get_pos_label(row, &column);
-            let position_label = PositionLabel { col_label, row_label };
-            let current_pos = Position { position_label, coordinates: tile_position };
+            let position_label = PositionLabel {
+                col_label,
+                row_label,
+            };
+            let current_pos = Position {
+                position_label,
+                coordinates: tile_position,
+            };
             // println!("Current position: {:?}", current_pos);
 
             commands.spawn(SpriteBundle {
@@ -179,14 +180,23 @@ fn setup(
                             position: current_pos,
                             team,
                             piece_type,
-                            available_moves: Vec::new()
-                        }
-                    )).id();
+                            available_moves: Vec::new(),
+                        },
+                    ))
+                    .id();
 
                 init_king_positions(piece_type, team, &mut game_state, current_pos);
-                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team, piece: Option::from(piece_id) };
+                game_state.board[row as usize][column as usize] = Tile {
+                    position: current_pos,
+                    team,
+                    piece: Option::from(piece_id),
+                };
             } else {
-                game_state.board[row as usize][column as usize] = Tile { position: current_pos, team: Team::None, piece: None, };
+                game_state.board[row as usize][column as usize] = Tile {
+                    position: current_pos,
+                    team: Team::None,
+                    piece: None,
+                };
             }
         }
     }
@@ -212,7 +222,10 @@ fn select_piece_system(
         for (entity, mut piece) in query_unselected.iter_mut() {
             let piece_coords = piece.position.coordinates;
             let in_bounds: bool = check_bounds(piece_coords.x, piece_coords.y, mouse_pos.unwrap());
-            if in_bounds && piece.team == game_state.turn && game_state.highlight_coords != piece_coords {
+            if in_bounds
+                && piece.team == game_state.turn
+                && game_state.highlight_coords != piece_coords
+            {
                 commands.spawn((
                     SpriteBundle {
                         sprite: Sprite {
@@ -226,7 +239,9 @@ fn select_piece_system(
                         },
                         ..default()
                     },
-                    Light { coordinates: piece_coords }
+                    Light {
+                        coordinates: piece_coords,
+                    },
                 ));
                 game_state.highlight_coords = piece_coords;
                 game_state.selected_piece = Option::from(entity);
@@ -244,7 +259,7 @@ fn select_piece_system(
 fn prevent_check_system(
     mut query_selected: Query<&mut Piece, With<Selected>>,
     query_unselected: Query<&mut Piece, Without<Selected>>,
-    game_state: Res<GameState>
+    game_state: Res<GameState>,
 ) {
     if game_state.selected_piece.is_none() {
         return;
@@ -258,20 +273,39 @@ fn prevent_check_system(
             game_state.black_king_data.position
         };
         for enemy_piece in query_unselected.iter() {
-            prevent_check(selected_piece.borrow_mut(), selected_entity, enemy_piece, king_pos, &game_state);
+            prevent_check(
+                selected_piece.borrow_mut(),
+                selected_entity,
+                enemy_piece,
+                king_pos,
+                &game_state,
+            );
         }
     }
 }
 
-fn enforce_checkmate_system(game_state: Res<GameState>, query_unselected: Query<(Entity, &mut Piece), Without<Selected>>) {
+fn enforce_checkmate_system(
+    game_state: Res<GameState>,
+    query_unselected: Query<(Entity, &mut Piece), Without<Selected>>,
+) {
     if game_state.selected_piece.is_some() {
         return;
     }
 
     let is_checkmate: bool = if game_state.turn == Team::White {
-        check_checkmate(game_state.turn, game_state.white_king_data.position, game_state.board, query_unselected)
+        check_checkmate(
+            game_state.turn,
+            game_state.white_king_data.position,
+            game_state.board,
+            query_unselected,
+        )
     } else {
-        check_checkmate(game_state.turn, game_state.black_king_data.position, game_state.board, query_unselected)
+        check_checkmate(
+            game_state.turn,
+            game_state.black_king_data.position,
+            game_state.board,
+            query_unselected,
+        )
     };
 
     if is_checkmate {
@@ -286,17 +320,29 @@ fn handle_move_system(
     query_windows: Query<&Window, With<PrimaryWindow>>,
     mut commands: Commands,
     mut query: Query<(Entity, &mut Piece, &mut Transform), With<Selected>>,
-    mut game_state: ResMut<GameState>
+    mut game_state: ResMut<GameState>,
 ) {
     let mouse_pos = query_windows.single().cursor_position();
-    if mouse_pos.is_none() || !buttons.just_pressed(MouseButton::Left) || game_state.selected_piece.is_none() {
+    if mouse_pos.is_none()
+        || !buttons.just_pressed(MouseButton::Left)
+        || game_state.selected_piece.is_none()
+    {
         return;
     }
 
-    if let Ok((entity, mut piece, mut transform)) = query.get_mut(game_state.selected_piece.unwrap()) {
+    if let Ok((entity, mut piece, mut transform)) =
+        query.get_mut(game_state.selected_piece.unwrap())
+    {
         for position in &piece.available_moves {
-            if check_bounds(position.coordinates.x, position.coordinates.y, mouse_pos.unwrap()) {
-                let delta: Vec2 = Vec2::new(position.coordinates.x - piece.position.coordinates.x, position.coordinates.y - piece.position.coordinates.y);
+            if check_bounds(
+                position.coordinates.x,
+                position.coordinates.y,
+                mouse_pos.unwrap(),
+            ) {
+                let delta: Vec2 = Vec2::new(
+                    position.coordinates.x - piece.position.coordinates.x,
+                    position.coordinates.y - piece.position.coordinates.y,
+                );
                 transform.translation.x += delta.x;
                 transform.translation.y += delta.y;
                 transform.translation.z = 999f32;
@@ -320,7 +366,11 @@ fn handle_move_system(
 
                 game_state.highlight_coords = Vec2::ZERO;
                 game_state.selected_piece = None;
-                game_state.turn = if game_state.turn == Team::White { Team::Black } else { Team::White };
+                game_state.turn = if game_state.turn == Team::White {
+                    Team::Black
+                } else {
+                    Team::White
+                };
 
                 piece.position = *position;
                 piece.available_moves = Vec::new();
@@ -331,7 +381,11 @@ fn handle_move_system(
     }
 }
 
-fn cleanup_select_system(query: Query<(Entity, &mut Light)>, mut commands: Commands, game_state: Res<GameState>) {
+fn cleanup_select_system(
+    query: Query<(Entity, &mut Light)>,
+    mut commands: Commands,
+    game_state: Res<GameState>,
+) {
     for (entity, highlight) in query.iter() {
         if highlight.coordinates != game_state.highlight_coords {
             commands.entity(entity).despawn();
