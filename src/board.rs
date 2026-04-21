@@ -1,7 +1,5 @@
 use crate::util::transform_mouse_coords;
-use crate::{
-    get_possible_moves_for_piece, Entity, GameState, KingData, Piece, PieceType, Team,
-};
+use crate::{get_possible_moves_for_piece, Entity, GameState, KingData, Piece, PieceType, Team};
 use bevy::color::palettes::css;
 use bevy::ecs::component::Component;
 use bevy::prelude::{Color, Vec2};
