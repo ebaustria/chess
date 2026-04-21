@@ -1,11 +1,8 @@
-use crate::board::{
-    check_bounds, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board,
-    init_king_positions, update_king_data, Position, PositionLabel, Tile, BOARD_DIMENSION,
-};
+use crate::board::{check_bounds, default_king_data, get_pos_label, get_tile_color, index_for_pos, init_board, init_king_positions, update_king_data, Position, PositionLabel, Tile, NUM_ROWS, BOARD_DIMENSION, NUM_COLUMNS, HALF_TILE, TILE_SIZE};
 use crate::check::{check_checkmate, prevent_check};
 use crate::pieces::{get_possible_moves_for_piece, init_piece_data, Team};
 use crate::util::load_image;
-use crate::{GameState, Light, Piece, Selected, HALF_TILE, NUM_COLUMNS, NUM_ROWS, TILE_SIZE};
+use crate::{GameState, Light, Piece, Selected};
 use bevy::app::{App, FixedUpdate, Update};
 use bevy::asset::{AssetServer, Handle};
 use bevy::color::Color;

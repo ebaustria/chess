@@ -18,11 +18,6 @@ const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 const WINDOW_WIDTH: u32 = 1080;
 const WINDOW_HEIGHT: u32 = 720;
 
-const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
-const HALF_TILE: f32 = TILE_SIZE.x / 2.;
-const NUM_ROWS: u8 = 8;
-const NUM_COLUMNS: u8 = 8;
-
 #[derive(Component)]
 pub struct Selected;
 

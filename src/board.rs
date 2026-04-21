@@ -1,11 +1,15 @@
 use crate::util::transform_mouse_coords;
 use crate::{
-    get_possible_moves_for_piece, Entity, GameState, KingData, Piece, PieceType, Team, HALF_TILE,
+    get_possible_moves_for_piece, Entity, GameState, KingData, Piece, PieceType, Team,
 };
 use bevy::color::palettes::css;
 use bevy::ecs::component::Component;
 use bevy::prelude::{Color, Vec2};
 
+pub(crate) const TILE_SIZE: Vec2 = Vec2::new(80., 80.);
+pub(crate) const HALF_TILE: f32 = TILE_SIZE.x / 2.;
+pub(crate) const NUM_ROWS: u8 = 8;
+pub(crate) const NUM_COLUMNS: u8 = 8;
 const TILE_LIGHT: Color = Color::Srgba(css::BEIGE);
 const TILE_DARK: Color = Color::Srgba(css::OLIVE);
 pub const BOARD_DIMENSION: f32 = 640.0;
