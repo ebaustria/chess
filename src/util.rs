@@ -12,3 +12,14 @@ pub fn transform_mouse_coords(mouse_coords: Vec2) -> Vec2 {
     let half_height: f32 = WINDOW_HEIGHT as f32 * 0.5;
     Vec2::from((mouse_coords.x - half_width, -(mouse_coords.y - half_height)))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_transform_mouse_coords() {
+        let mouse_coords = Vec2::new(762., 427.);
+        assert_eq!(transform_mouse_coords(mouse_coords), Vec2::new(222., -67.));
+    }
+}

@@ -169,3 +169,47 @@ pub fn simulate_move(
     board[old_row][old_col].team = Team::None;
     board[old_row][old_col].piece = None;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_tile_color_dark() {
+        assert_eq!(get_tile_color(&2, &4), TILE_DARK);
+        assert_eq!(get_tile_color(&3, &5), TILE_DARK);
+    }
+
+    #[test]
+    fn test_get_tile_color_light() {
+        assert_eq!(get_tile_color(&2, &3), TILE_LIGHT);
+        assert_eq!(get_tile_color(&5, &4), TILE_LIGHT);
+    }
+
+    #[test]
+    fn test_index_for_pos() {
+        let mut pos_label = PositionLabel {
+            col_label: ColLabel::A,
+            row_label: 1,
+        };
+
+        assert_eq!(index_for_pos(pos_label), (0, 0));
+
+        pos_label.col_label = ColLabel::B;
+        pos_label.row_label = 4;
+
+        assert_eq!(index_for_pos(pos_label), (3, 1))
+    }
+
+    #[test]
+    fn test_get_pos_label() {
+        assert_eq!(get_pos_label(4, &0), (ColLabel::A, 5));
+        assert_eq!(get_pos_label(6, &1), (ColLabel::B, 7));
+        assert_eq!(get_pos_label(3, &2), (ColLabel::C, 4));
+        assert_eq!(get_pos_label(4, &3), (ColLabel::D, 5));
+        assert_eq!(get_pos_label(0, &4), (ColLabel::E, 1));
+        assert_eq!(get_pos_label(1, &5), (ColLabel::F, 2));
+        assert_eq!(get_pos_label(5, &6), (ColLabel::G, 6));
+        assert_eq!(get_pos_label(2, &7), (ColLabel::H, 3));
+    }
+}
