@@ -175,6 +175,39 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_init_board() {
+        let board = init_board();
+        let pos_placeholder = Position {
+            position_label: PositionLabel {
+                col_label: ColLabel::A,
+                row_label: 1,
+            },
+            coordinates: Vec2::ZERO,
+        };
+        for row in board {
+            for tile in row {
+                assert_eq!(tile.team, Team::None);
+                assert_eq!(tile.piece, None);
+                assert_eq!(tile.position, pos_placeholder);
+            }
+        }
+    }
+
+    #[test]
+    fn test_default_king_data() {
+        let king_data = default_king_data();
+        let pos_placeholder = Position {
+            position_label: PositionLabel {
+                col_label: ColLabel::A,
+                row_label: 0,
+            },
+            coordinates: Vec2::ZERO,
+        };
+        assert_eq!(king_data.position, pos_placeholder);
+        assert_eq!(king_data.available_moves, Vec::new());
+    }
+
+    #[test]
     fn test_get_tile_color_dark() {
         assert_eq!(get_tile_color(&2, &4), TILE_DARK);
         assert_eq!(get_tile_color(&3, &5), TILE_DARK);
@@ -211,5 +244,17 @@ mod tests {
         assert_eq!(get_pos_label(1, &5), (ColLabel::F, 2));
         assert_eq!(get_pos_label(5, &6), (ColLabel::G, 6));
         assert_eq!(get_pos_label(2, &7), (ColLabel::H, 3));
+    }
+
+    #[test]
+    fn test_check_bounds() {
+        let x_coord: f32 = 40.;
+        let y_coord: f32 = -40.;
+
+        let in_bounds_mouse_coords = Vec2::new(580., 400.);
+        assert!(check_bounds(x_coord, y_coord, in_bounds_mouse_coords));
+
+        let out_of_bounds_mouse_coords = Vec2::new(580., 359.);
+        assert_eq!(check_bounds(x_coord, y_coord, out_of_bounds_mouse_coords), false);
     }
 }
