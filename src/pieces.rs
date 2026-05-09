@@ -1,6 +1,7 @@
 use bevy::asset::Handle;
 use bevy::ecs::component::Component;
-use bevy::prelude::{Image, Res};
+use bevy::prelude::Image;
+use rstest::*;
 
 use crate::game::ImageCache;
 use crate::{ColLabel, Piece, Position, PositionLabel, Tile};
@@ -28,7 +29,7 @@ pub struct KingData {
 }
 
 pub fn init_piece_data(
-    image_cache: &Res<ImageCache>,
+    image_cache: &ImageCache,
     current_position: Position,
 ) -> (Handle<Image>, Team, PieceType) {
     let Position { position_label, .. } = current_position;
@@ -513,5 +514,130 @@ fn attack_moves_for_pawn(
 
     if col > 0 && board[row][col - 1].team == team {
         result.push(board[row][col - 1].position);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::math::Vec2;
+
+    struct Test {
+        image_cache: ImageCache,
+        position: Position,
+        cols: Vec<ColLabel>,
+    }
+
+    impl Test {
+        fn check_rows(&mut self, expected_type: PieceType) {
+            self.position.position_label.row_label = 8;
+            self.check_piece_data(Team::Black, expected_type);
+            self.position.position_label.row_label = 1;
+            self.check_piece_data(Team::White, expected_type);
+        }
+
+        fn check_piece_data(&mut self, expected_team: Team, expected_type: PieceType) {
+            for col in self.cols.iter() {
+                self.position.position_label.col_label = *col;
+                let (_, team, piece_type) = init_piece_data(&self.image_cache, self.position);
+                assert_eq!(team, expected_team);
+                assert_eq!(piece_type, expected_type);
+            }
+        }
+    }
+
+    #[fixture]
+    fn image_cache() -> ImageCache {ImageCache {
+        white_pawn: Default::default(),
+        white_knight: Default::default(),
+        white_bishop: Default::default(),
+        white_rook: Default::default(),
+        white_queen: Default::default(),
+        white_king: Default::default(),
+        black_pawn: Default::default(),
+        black_knight: Default::default(),
+        black_bishop: Default::default(),
+        black_rook: Default::default(),
+        black_queen: Default::default(),
+        black_king: Default::default(),
+    }}
+
+    #[fixture]
+    fn position() -> Position {
+        Position {
+            position_label: PositionLabel {
+                col_label: ColLabel::A,
+                row_label: 0,
+            },
+            coordinates: Vec2::ZERO,
+        }
+    }
+
+    #[rstest]
+    fn test_init_pawn_data(image_cache: ImageCache, mut position: Position) {
+        position.position_label.row_label = 7;
+
+        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
+
+        assert_eq!(team, Team::Black);
+        assert_eq!(piece_type, PieceType::Pawn);
+
+        position.position_label.row_label = 2;
+
+        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
+
+        assert_eq!(team, Team::White);
+        assert_eq!(piece_type, PieceType::Pawn);
+    }
+
+    #[rstest]
+    fn test_init_rook_data(image_cache: ImageCache, position: Position) {
+        let mut test = Test {
+            image_cache,
+            position,
+            cols: vec![ColLabel::A, ColLabel::H],
+        };
+
+        test.check_rows(PieceType::Rook);
+    }
+
+    #[rstest]
+    fn test_init_knight_data(image_cache: ImageCache, position: Position) {
+        let mut test = Test {
+            image_cache,
+            position,
+            cols: vec![ColLabel::B, ColLabel::G],
+        };
+
+        test.check_rows(PieceType::Knight);
+    }
+
+    #[rstest]
+    fn test_init_bishop_data(image_cache: ImageCache, position: Position) {
+        let mut test = Test {
+            image_cache,
+            position,
+            cols: vec![ColLabel::C, ColLabel::F],
+        };
+
+        test.check_rows(PieceType::Bishop);
+    }
+
+    #[rstest]
+    fn test_init_queen_data(image_cache: ImageCache, mut position: Position) {
+        position.position_label.row_label = 8;
+        position.position_label.col_label = ColLabel::D;
+
+        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
+
+        assert_eq!(team, Team::Black);
+        assert_eq!(piece_type, PieceType::Queen);
+
+        position.position_label.row_label = 1;
+
+        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
+
+        assert_eq!(team, Team::White);
+        assert_eq!(piece_type, PieceType::Queen);
     }
 }
