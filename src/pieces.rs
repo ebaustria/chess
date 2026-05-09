@@ -522,56 +522,56 @@ mod tests {
     use super::*;
     use bevy::math::Vec2;
 
-    struct Test {
+    struct Data {
         image_cache: ImageCache,
         position: Position,
+    }
+
+    struct CommonPieceTest {
+        data: Data,
         cols: Vec<ColLabel>,
     }
 
-    struct RoyalTest {
-        image_cache: ImageCache,
-        position: Position,
+    struct RoyalPieceTest {
+        data: Data,
     }
 
     trait Rows {
         fn check_rows(&mut self, expected_type: PieceType);
     }
 
-    impl Test {
-        fn check_piece_data(&mut self, expected_team: Team, expected_type: PieceType) {
+    impl Data {
+        fn check_piece_data(&self, expected_team: Team, expected_type: PieceType) {
+            let (_, team, piece_type) = init_piece_data(&self.image_cache, self.position);
+            assert_eq!(team, expected_team);
+            assert_eq!(piece_type, expected_type);
+        }
+    }
+
+    impl CommonPieceTest {
+        fn check_cols(&mut self, expected_team: Team, expected_type: PieceType) {
             for col in self.cols.iter() {
-                self.position.position_label.col_label = *col;
-                let (_, team, piece_type) = init_piece_data(&self.image_cache, self.position);
-                assert_eq!(team, expected_team);
-                assert_eq!(piece_type, expected_type);
+                self.data.position.position_label.col_label = *col;
+                self.data.check_piece_data(expected_team, expected_type);
             }
         }
     }
 
-    impl Rows for Test {
+    impl Rows for CommonPieceTest {
         fn check_rows(&mut self, expected_type: PieceType) {
-            self.position.position_label.row_label = 8;
-            self.check_piece_data(Team::Black, expected_type);
-            self.position.position_label.row_label = 1;
-            self.check_piece_data(Team::White, expected_type);
+            self.data.position.position_label.row_label = 8;
+            self.check_cols(Team::Black, expected_type);
+            self.data.position.position_label.row_label = 1;
+            self.check_cols(Team::White, expected_type);
         }
     }
 
-    impl Rows for RoyalTest {
+    impl Rows for RoyalPieceTest {
         fn check_rows(&mut self, expected_type: PieceType) {
-            self.position.position_label.row_label = 8;
-
-            let (_, team, piece_type)  = init_piece_data(&self.image_cache, self.position);
-
-            assert_eq!(team, Team::Black);
-            assert_eq!(piece_type, expected_type);
-
-            self.position.position_label.row_label = 1;
-
-            let (_, team, piece_type)  = init_piece_data(&self.image_cache, self.position);
-
-            assert_eq!(team, Team::White);
-            assert_eq!(piece_type, expected_type);
+            self.data.position.position_label.row_label = 8;
+            self.data.check_piece_data(Team::Black, expected_type);
+            self.data.position.position_label.row_label = 1;
+            self.data.check_piece_data(Team::White, expected_type);
         }
     }
 
@@ -604,26 +604,19 @@ mod tests {
 
     #[rstest]
     fn test_init_pawn_data(image_cache: ImageCache, mut position: Position) {
-        position.position_label.row_label = 7;
-
-        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
-
-        assert_eq!(team, Team::Black);
-        assert_eq!(piece_type, PieceType::Pawn);
-
-        position.position_label.row_label = 2;
-
-        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
-
-        assert_eq!(team, Team::White);
-        assert_eq!(piece_type, PieceType::Pawn);
+        let mut data = Data {
+            image_cache, position,
+        };
+        data.position.position_label.row_label = 7;
+        data.check_piece_data(Team::Black, PieceType::Pawn);
+        data.position.position_label.row_label = 2;
+        data.check_piece_data(Team::White, PieceType::Pawn);
     }
 
     #[rstest]
     fn test_init_rook_data(image_cache: ImageCache, position: Position) {
-        let mut test = Test {
-            image_cache,
-            position,
+        let mut test = CommonPieceTest {
+            data: Data { image_cache, position },
             cols: vec![ColLabel::A, ColLabel::H],
         };
 
@@ -632,9 +625,11 @@ mod tests {
 
     #[rstest]
     fn test_init_knight_data(image_cache: ImageCache, position: Position) {
-        let mut test = Test {
+        let mut test = CommonPieceTest {
+        data: Data {
             image_cache,
             position,
+        },
             cols: vec![ColLabel::B, ColLabel::G],
         };
 
@@ -643,9 +638,11 @@ mod tests {
 
     #[rstest]
     fn test_init_bishop_data(image_cache: ImageCache, position: Position) {
-        let mut test = Test {
+        let mut test = CommonPieceTest {
+        data: Data {
             image_cache,
             position,
+        },
             cols: vec![ColLabel::C, ColLabel::F],
         };
 
@@ -654,21 +651,25 @@ mod tests {
 
     #[rstest]
     fn test_init_queen_data(image_cache: ImageCache, position: Position) {
-        let mut test = RoyalTest {
+        let mut test = RoyalPieceTest {
+        data: Data {
             image_cache,
             position,
+        },
         };
-        test.position.position_label.col_label = ColLabel::D;
+        test.data.position.position_label.col_label = ColLabel::D;
         test.check_rows(PieceType::Queen);
     }
 
     #[rstest]
     fn test_init_king_data(image_cache: ImageCache, position: Position) {
-        let mut test = RoyalTest {
+        let mut test = RoyalPieceTest {
+        data: Data {
             image_cache,
             position,
+        },
         };
-        test.position.position_label.col_label = ColLabel::E;
+        test.data.position.position_label.col_label = ColLabel::E;
         test.check_rows(PieceType::King);
     }
 }
