@@ -576,20 +576,22 @@ mod tests {
     }
 
     #[fixture]
-    fn image_cache() -> ImageCache {ImageCache {
-        white_pawn: Default::default(),
-        white_knight: Default::default(),
-        white_bishop: Default::default(),
-        white_rook: Default::default(),
-        white_queen: Default::default(),
-        white_king: Default::default(),
-        black_pawn: Default::default(),
-        black_knight: Default::default(),
-        black_bishop: Default::default(),
-        black_rook: Default::default(),
-        black_queen: Default::default(),
-        black_king: Default::default(),
-    }}
+    fn image_cache() -> ImageCache {
+        ImageCache {
+            white_pawn: Default::default(),
+            white_knight: Default::default(),
+            white_bishop: Default::default(),
+            white_rook: Default::default(),
+            white_queen: Default::default(),
+            white_king: Default::default(),
+            black_pawn: Default::default(),
+            black_knight: Default::default(),
+            black_bishop: Default::default(),
+            black_rook: Default::default(),
+            black_queen: Default::default(),
+            black_king: Default::default(),
+        }
+    }
 
     #[fixture]
     fn position() -> Position {
@@ -605,7 +607,8 @@ mod tests {
     #[rstest]
     fn test_init_pawn_data(image_cache: ImageCache, mut position: Position) {
         let mut data = Data {
-            image_cache, position,
+            image_cache,
+            position,
         };
         data.position.position_label.row_label = 7;
         data.check_piece_data(Team::Black, PieceType::Pawn);
@@ -616,7 +619,10 @@ mod tests {
     #[rstest]
     fn test_init_rook_data(image_cache: ImageCache, position: Position) {
         let mut test = CommonPieceTest {
-            data: Data { image_cache, position },
+            data: Data {
+                image_cache,
+                position,
+            },
             cols: vec![ColLabel::A, ColLabel::H],
         };
 
@@ -626,10 +632,10 @@ mod tests {
     #[rstest]
     fn test_init_knight_data(image_cache: ImageCache, position: Position) {
         let mut test = CommonPieceTest {
-        data: Data {
-            image_cache,
-            position,
-        },
+            data: Data {
+                image_cache,
+                position,
+            },
             cols: vec![ColLabel::B, ColLabel::G],
         };
 
@@ -639,10 +645,10 @@ mod tests {
     #[rstest]
     fn test_init_bishop_data(image_cache: ImageCache, position: Position) {
         let mut test = CommonPieceTest {
-        data: Data {
-            image_cache,
-            position,
-        },
+            data: Data {
+                image_cache,
+                position,
+            },
             cols: vec![ColLabel::C, ColLabel::F],
         };
 
@@ -652,10 +658,10 @@ mod tests {
     #[rstest]
     fn test_init_queen_data(image_cache: ImageCache, position: Position) {
         let mut test = RoyalPieceTest {
-        data: Data {
-            image_cache,
-            position,
-        },
+            data: Data {
+                image_cache,
+                position,
+            },
         };
         test.data.position.position_label.col_label = ColLabel::D;
         test.check_rows(PieceType::Queen);
@@ -664,10 +670,10 @@ mod tests {
     #[rstest]
     fn test_init_king_data(image_cache: ImageCache, position: Position) {
         let mut test = RoyalPieceTest {
-        data: Data {
-            image_cache,
-            position,
-        },
+            data: Data {
+                image_cache,
+                position,
+            },
         };
         test.data.position.position_label.col_label = ColLabel::E;
         test.check_rows(PieceType::King);

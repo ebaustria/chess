@@ -256,6 +256,9 @@ mod tests {
         assert!(check_bounds(x_coord, y_coord, in_bounds_mouse_coords));
 
         let out_of_bounds_mouse_coords = Vec2::new(580., 359.);
-        assert_eq!(check_bounds(x_coord, y_coord, out_of_bounds_mouse_coords), false);
+        assert_eq!(
+            check_bounds(x_coord, y_coord, out_of_bounds_mouse_coords),
+            false
+        );
     }
 }
