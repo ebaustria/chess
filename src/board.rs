@@ -43,6 +43,7 @@ pub struct Position {
     pub(crate) coordinates: Vec2,
 }
 
+// TODO Change these to default trait
 pub fn init_board() -> [[Tile; 8]; 8] {
     [[Tile {
         team: Team::None,

@@ -528,14 +528,16 @@ mod tests {
         cols: Vec<ColLabel>,
     }
 
-    impl Test {
-        fn check_rows(&mut self, expected_type: PieceType) {
-            self.position.position_label.row_label = 8;
-            self.check_piece_data(Team::Black, expected_type);
-            self.position.position_label.row_label = 1;
-            self.check_piece_data(Team::White, expected_type);
-        }
+    struct RoyalTest {
+        image_cache: ImageCache,
+        position: Position,
+    }
 
+    trait Rows {
+        fn check_rows(&mut self, expected_type: PieceType);
+    }
+
+    impl Test {
         fn check_piece_data(&mut self, expected_team: Team, expected_type: PieceType) {
             for col in self.cols.iter() {
                 self.position.position_label.col_label = *col;
@@ -543,6 +545,33 @@ mod tests {
                 assert_eq!(team, expected_team);
                 assert_eq!(piece_type, expected_type);
             }
+        }
+    }
+
+    impl Rows for Test {
+        fn check_rows(&mut self, expected_type: PieceType) {
+            self.position.position_label.row_label = 8;
+            self.check_piece_data(Team::Black, expected_type);
+            self.position.position_label.row_label = 1;
+            self.check_piece_data(Team::White, expected_type);
+        }
+    }
+
+    impl Rows for RoyalTest {
+        fn check_rows(&mut self, expected_type: PieceType) {
+            self.position.position_label.row_label = 8;
+
+            let (_, team, piece_type)  = init_piece_data(&self.image_cache, self.position);
+
+            assert_eq!(team, Team::Black);
+            assert_eq!(piece_type, expected_type);
+
+            self.position.position_label.row_label = 1;
+
+            let (_, team, piece_type)  = init_piece_data(&self.image_cache, self.position);
+
+            assert_eq!(team, Team::White);
+            assert_eq!(piece_type, expected_type);
         }
     }
 
@@ -624,20 +653,22 @@ mod tests {
     }
 
     #[rstest]
-    fn test_init_queen_data(image_cache: ImageCache, mut position: Position) {
-        position.position_label.row_label = 8;
-        position.position_label.col_label = ColLabel::D;
+    fn test_init_queen_data(image_cache: ImageCache, position: Position) {
+        let mut test = RoyalTest {
+            image_cache,
+            position,
+        };
+        test.position.position_label.col_label = ColLabel::D;
+        test.check_rows(PieceType::Queen);
+    }
 
-        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
-
-        assert_eq!(team, Team::Black);
-        assert_eq!(piece_type, PieceType::Queen);
-
-        position.position_label.row_label = 1;
-
-        let (_, team, piece_type)  = init_piece_data(&image_cache, position);
-
-        assert_eq!(team, Team::White);
-        assert_eq!(piece_type, PieceType::Queen);
+    #[rstest]
+    fn test_init_king_data(image_cache: ImageCache, position: Position) {
+        let mut test = RoyalTest {
+            image_cache,
+            position,
+        };
+        test.position.position_label.col_label = ColLabel::E;
+        test.check_rows(PieceType::King);
     }
 }
