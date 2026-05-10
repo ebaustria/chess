@@ -7,13 +7,14 @@ use crate::game::ImageCache;
 use crate::{ColLabel, Piece, Position, PositionLabel, Tile};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
+#[repr(usize)]
 pub enum PieceType {
-    Pawn,
-    Bishop,
-    Knight,
-    Rook,
-    Queen,
-    King,
+    Pawn = 0,
+    Bishop = 1,
+    Knight = 2,
+    Rook = 3,
+    Queen = 4,
+    King = 5,
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone)]
@@ -26,6 +27,269 @@ pub enum Team {
 pub struct KingData {
     pub(crate) position: Position,
     pub(crate) available_moves: Vec<Position>,
+}
+
+trait MoveStrategy: Sync {
+    fn possible_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position>;
+}
+
+struct PawnStrategy;
+
+impl MoveStrategy for PawnStrategy {
+    fn possible_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+        let mut result = Vec::new();
+        let col = piece.position.position_label.col_label as usize;
+        let row = piece.position.position_label.row_label as usize;
+        if piece.team == Team::White {
+            if row == 2 {
+                let row_label = row + 1;
+                if board[row_label][col].team == Team::None {
+                    result.push(board[row_label][col].position);
+                }
+            }
+
+            if board[row][col].team == Team::None {
+                result.push(board[row][col].position);
+            }
+
+            attack_moves_for_pawn(board, row, col, Team::Black, &mut result);
+            return result;
+        }
+
+        // Get moves for black pawns
+        if row == 7 {
+            let row_label = row - 3;
+            if board[row_label][col].team == Team::None {
+                result.push(board[row_label][col].position);
+            }
+        }
+
+        let row_label = row - 2;
+        if board[row_label][col].team == Team::None {
+            result.push(board[row_label][col].position);
+        }
+
+        attack_moves_for_pawn(board, row_label, col, Team::White, &mut result);
+        result
+    }
+}
+
+struct BishopStrategy;
+
+impl MoveStrategy for BishopStrategy {
+    fn possible_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+        let mut result = Vec::new();
+        let radius: i8 = 1;
+
+        upper_left_diagonal_moves(piece, board, radius, &mut result);
+        upper_right_diagonal_moves(piece, board, radius as u8, &mut result);
+        lower_left_diagonal_moves(piece, board, radius, &mut result);
+        lower_right_diagonal_moves(piece, board, radius, &mut result);
+
+        result
+    }
+}
+
+struct KnightStrategy;
+
+impl MoveStrategy for KnightStrategy {
+    fn possible_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+        let mut result = Vec::new();
+        let col = piece.position.position_label.col_label as i8;
+        let row = (piece.position.position_label.row_label - 1) as i8;
+
+        let up_big = (row + 2) as usize;
+        let down_big: i8 = row - 2;
+        let left_big: i8 = col - 2;
+        let right_big = (col + 2) as usize;
+
+        let left_small: i8 = col - 1;
+        let right_small = (col + 1) as usize;
+        let up_small = (row + 1) as usize;
+        let down_small = row - 1;
+
+        if up_big < 8 {
+            if left_small > -1 {
+                add_position(piece.team, &board[up_big][left_small as usize], &mut result);
+            }
+            if right_small < 8 {
+                add_position(piece.team, &board[up_big][right_small], &mut result);
+            }
+        }
+
+        if down_big > -1 {
+            if left_small > -1 {
+                add_position(
+                    piece.team,
+                    &board[down_big as usize][left_small as usize],
+                    &mut result,
+                );
+            }
+            if right_small < 8 {
+                add_position(
+                    piece.team,
+                    &board[down_big as usize][right_small],
+                    &mut result,
+                );
+            }
+        }
+
+        if left_big > -1 {
+            if up_small < 8 {
+                add_position(piece.team, &board[up_small][left_big as usize], &mut result);
+            }
+            if down_small > -1 {
+                add_position(
+                    piece.team,
+                    &board[down_small as usize][left_big as usize],
+                    &mut result,
+                );
+            }
+        }
+
+        if right_big < 8 {
+            if up_small < 8 {
+                add_position(piece.team, &board[up_small][right_big], &mut result);
+            }
+            if down_small > -1 {
+                add_position(
+                    piece.team,
+                    &board[down_small as usize][right_big],
+                    &mut result,
+                );
+            }
+        }
+
+        result
+    }
+}
+
+struct RookStrategy;
+
+impl MoveStrategy for RookStrategy {
+    fn possible_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+        let mut result = Vec::new();
+        let radius: i8 = 1;
+
+        upper_vertical_moves(piece, board, radius as u8, &mut result);
+        lower_vertical_moves(piece, board, radius, &mut result);
+        left_horizontal_moves(piece, board, radius, &mut result);
+        right_horizontal_moves(piece, board, radius as u8, &mut result);
+
+        result
+    }
+}
+
+struct QueenStrategy;
+
+impl MoveStrategy for QueenStrategy {
+    fn possible_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+        let mut result = Vec::new();
+        let radius: i8 = 1;
+
+        upper_vertical_moves(piece, board, radius as u8, &mut result);
+        lower_vertical_moves(piece, board, radius, &mut result);
+        left_horizontal_moves(piece, board, radius, &mut result);
+        right_horizontal_moves(piece, board, radius as u8, &mut result);
+        upper_left_diagonal_moves(piece, board, radius, &mut result);
+        upper_right_diagonal_moves(piece, board, radius as u8, &mut result);
+        lower_left_diagonal_moves(piece, board, radius, &mut result);
+        lower_right_diagonal_moves(piece, board, radius, &mut result);
+
+        result
+    }
+}
+
+pub struct KingStrategy;
+
+impl MoveStrategy for KingStrategy {
+    fn possible_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+        let mut result = Vec::new();
+        let col = piece.position.position_label.col_label as i8;
+        let row = (piece.position.position_label.row_label - 1) as i8;
+
+        let row_upper = (row + 1) as usize;
+        let row_lower: i8 = row - 1;
+        let col_left: i8 = col - 1;
+        let col_right = (col + 1) as usize;
+
+        // check above
+        if row_upper < 8 {
+            add_position(piece.team, &board[row_upper][col as usize], &mut result);
+            if col_left > -1 {
+                add_position(
+                    piece.team,
+                    &board[row_upper][col_left as usize],
+                    &mut result,
+                );
+            }
+            if col_right < 8 {
+                add_position(piece.team, &board[row_upper][col_right], &mut result);
+            }
+        }
+
+        // check below
+        if row_lower > -1 {
+            add_position(
+                piece.team,
+                &board[row_lower as usize][col as usize],
+                &mut result,
+            );
+            if col_left > -1 {
+                add_position(
+                    piece.team,
+                    &board[row_lower as usize][col_left as usize],
+                    &mut result,
+                );
+            }
+            if col_right < 8 {
+                add_position(
+                    piece.team,
+                    &board[row_lower as usize][col_right],
+                    &mut result,
+                );
+            }
+        }
+
+        if col_left > -1 {
+            add_position(
+                piece.team,
+                &board[row as usize][col_left as usize],
+                &mut result,
+            );
+        }
+        if col_right < 8 {
+            add_position(piece.team, &board[row as usize][col_right], &mut result);
+        }
+
+        result
+    }
+}
+
+static MOVE_STRATEGIES: [&'static dyn MoveStrategy; 6] = [
+    &PawnStrategy,
+    &BishopStrategy,
+    &KnightStrategy,
+    &RookStrategy,
+    &QueenStrategy,
+    &KingStrategy,
+];
+
+pub struct PieceContext {
+    move_strategy: &'static dyn MoveStrategy,
+}
+
+impl PieceContext {
+    pub fn new(piece_type: PieceType) -> Self {
+        let move_strat = MOVE_STRATEGIES[piece_type as usize];
+        Self {
+            move_strategy: move_strat,
+        }
+    }
+
+    pub fn get_moves(&self, piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
+        self.move_strategy.possible_moves(piece, board)
+    }
 }
 
 pub fn init_piece_data(
@@ -112,193 +376,10 @@ pub fn init_piece_data(
     }
 }
 
-pub fn get_possible_moves_for_piece(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    match piece.piece_type {
-        PieceType::Pawn => possible_moves_for_pawn(piece, board),
-        PieceType::Bishop => possible_moves_for_bishop(piece, board),
-        PieceType::Knight => possible_moves_for_knight(piece, board),
-        PieceType::Rook => possible_moves_for_rook(piece, board),
-        PieceType::Queen => possible_moves_for_queen(piece, board),
-        PieceType::King => possible_moves_for_king(piece, board),
-    }
-}
-
-fn possible_moves_for_knight(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    let mut result = Vec::new();
-    let col = piece.position.position_label.col_label as i8;
-    let row = (piece.position.position_label.row_label - 1) as i8;
-
-    let up_big = (row + 2) as usize;
-    let down_big: i8 = row - 2;
-    let left_big: i8 = col - 2;
-    let right_big = (col + 2) as usize;
-
-    let left_small: i8 = col - 1;
-    let right_small = (col + 1) as usize;
-    let up_small = (row + 1) as usize;
-    let down_small = row - 1;
-
-    if up_big < 8 {
-        if left_small > -1 {
-            add_position(piece.team, &board[up_big][left_small as usize], &mut result);
-        }
-        if right_small < 8 {
-            add_position(piece.team, &board[up_big][right_small], &mut result);
-        }
-    }
-
-    if down_big > -1 {
-        if left_small > -1 {
-            add_position(
-                piece.team,
-                &board[down_big as usize][left_small as usize],
-                &mut result,
-            );
-        }
-        if right_small < 8 {
-            add_position(
-                piece.team,
-                &board[down_big as usize][right_small],
-                &mut result,
-            );
-        }
-    }
-
-    if left_big > -1 {
-        if up_small < 8 {
-            add_position(piece.team, &board[up_small][left_big as usize], &mut result);
-        }
-        if down_small > -1 {
-            add_position(
-                piece.team,
-                &board[down_small as usize][left_big as usize],
-                &mut result,
-            );
-        }
-    }
-
-    if right_big < 8 {
-        if up_small < 8 {
-            add_position(piece.team, &board[up_small][right_big], &mut result);
-        }
-        if down_small > -1 {
-            add_position(
-                piece.team,
-                &board[down_small as usize][right_big],
-                &mut result,
-            );
-        }
-    }
-
-    result
-}
-
 fn add_position(team: Team, tile: &Tile, result: &mut Vec<Position>) {
     if tile.team != team {
         result.push(tile.position);
     }
-}
-
-fn possible_moves_for_king(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    let mut result = Vec::new();
-    let col = piece.position.position_label.col_label as i8;
-    let row = (piece.position.position_label.row_label - 1) as i8;
-
-    let row_upper = (row + 1) as usize;
-    let row_lower: i8 = row - 1;
-    let col_left: i8 = col - 1;
-    let col_right = (col + 1) as usize;
-
-    // check above
-    if row_upper < 8 {
-        add_position(piece.team, &board[row_upper][col as usize], &mut result);
-        if col_left > -1 {
-            add_position(
-                piece.team,
-                &board[row_upper][col_left as usize],
-                &mut result,
-            );
-        }
-        if col_right < 8 {
-            add_position(piece.team, &board[row_upper][col_right], &mut result);
-        }
-    }
-
-    // check below
-    if row_lower > -1 {
-        add_position(
-            piece.team,
-            &board[row_lower as usize][col as usize],
-            &mut result,
-        );
-        if col_left > -1 {
-            add_position(
-                piece.team,
-                &board[row_lower as usize][col_left as usize],
-                &mut result,
-            );
-        }
-        if col_right < 8 {
-            add_position(
-                piece.team,
-                &board[row_lower as usize][col_right],
-                &mut result,
-            );
-        }
-    }
-
-    if col_left > -1 {
-        add_position(
-            piece.team,
-            &board[row as usize][col_left as usize],
-            &mut result,
-        );
-    }
-    if col_right < 8 {
-        add_position(piece.team, &board[row as usize][col_right], &mut result);
-    }
-
-    result
-}
-
-fn possible_moves_for_queen(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    let mut result = Vec::new();
-    let radius: i8 = 1;
-
-    upper_vertical_moves(piece, board, radius as u8, &mut result);
-    lower_vertical_moves(piece, board, radius, &mut result);
-    left_horizontal_moves(piece, board, radius, &mut result);
-    right_horizontal_moves(piece, board, radius as u8, &mut result);
-    upper_left_diagonal_moves(piece, board, radius, &mut result);
-    upper_right_diagonal_moves(piece, board, radius as u8, &mut result);
-    lower_left_diagonal_moves(piece, board, radius, &mut result);
-    lower_right_diagonal_moves(piece, board, radius, &mut result);
-
-    result
-}
-
-fn possible_moves_for_rook(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    let mut result = Vec::new();
-    let radius: i8 = 1;
-
-    upper_vertical_moves(piece, board, radius as u8, &mut result);
-    lower_vertical_moves(piece, board, radius, &mut result);
-    left_horizontal_moves(piece, board, radius, &mut result);
-    right_horizontal_moves(piece, board, radius as u8, &mut result);
-
-    result
-}
-
-fn possible_moves_for_bishop(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    let mut result = Vec::new();
-    let radius: i8 = 1;
-
-    upper_left_diagonal_moves(piece, board, radius, &mut result);
-    upper_right_diagonal_moves(piece, board, radius as u8, &mut result);
-    lower_left_diagonal_moves(piece, board, radius, &mut result);
-    lower_right_diagonal_moves(piece, board, radius, &mut result);
-
-    result
 }
 
 fn lower_vertical_moves(
@@ -462,43 +543,6 @@ fn upper_left_diagonal_moves(
         positions.push(tile.position);
         upper_left_diagonal_moves(piece, board, radius + 1, positions);
     }
-}
-
-fn possible_moves_for_pawn(piece: &Piece, board: &[[Tile; 8]; 8]) -> Vec<Position> {
-    let mut result = Vec::new();
-    let col = piece.position.position_label.col_label as usize;
-    let row = piece.position.position_label.row_label as usize;
-    if piece.team == Team::White {
-        if row == 2 {
-            let row_label = row + 1;
-            if board[row_label][col].team == Team::None {
-                result.push(board[row_label][col].position);
-            }
-        }
-
-        if board[row][col].team == Team::None {
-            result.push(board[row][col].position);
-        }
-
-        attack_moves_for_pawn(board, row, col, Team::Black, &mut result);
-        return result;
-    }
-
-    // Get moves for black pawns
-    if row == 7 {
-        let row_label = row - 3;
-        if board[row_label][col].team == Team::None {
-            result.push(board[row_label][col].position);
-        }
-    }
-
-    let row_label = row - 2;
-    if board[row_label][col].team == Team::None {
-        result.push(board[row_label][col].position);
-    }
-
-    attack_moves_for_pawn(board, row_label, col, Team::White, &mut result);
-    result
 }
 
 fn attack_moves_for_pawn(

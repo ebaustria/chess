@@ -1,8 +1,5 @@
-use crate::pieces::Team;
-use crate::{
-    get_possible_moves_for_piece, simulate_move, GameState, Piece, PieceType, Position, Selected,
-    Tile,
-};
+use crate::pieces::{PieceContext, Team};
+use crate::{simulate_move, GameState, Piece, PieceType, Position, Selected, Tile};
 use bevy::ecs::query::QueryEntityError;
 use bevy::prelude::{Entity, Query, Without};
 use std::collections::HashSet;
@@ -34,8 +31,8 @@ pub fn prevent_check(
             move_label,
         );
 
-        let available_enemy_moves: Vec<Position> =
-            get_possible_moves_for_piece(enemy_piece, &board_copy);
+        let context = PieceContext::new(enemy_piece.piece_type);
+        let available_enemy_moves: Vec<Position> = context.get_moves(enemy_piece, &board_copy);
         !available_enemy_moves.iter().any(|&pos| {
             if selected_piece.piece_type == PieceType::King {
                 return pos.position_label == move_label;
@@ -67,7 +64,8 @@ pub fn check_checkmate(
             query_unselected.get(entity);
         let piece = queried_entity.unwrap().1;
 
-        let mut available_moves: Vec<Position> = get_possible_moves_for_piece(piece, &board);
+        let context = PieceContext::new(piece.piece_type);
+        let mut available_moves: Vec<Position> = context.get_moves(piece, &board);
         available_moves.retain(|position| {
             let move_label = position.position_label;
             if move_label == piece.position.position_label {
@@ -91,8 +89,9 @@ pub fn check_checkmate(
                     query_unselected.get(enemy_entity);
                 let enemy_piece = queried_enemy.unwrap().1;
 
+                let context = PieceContext::new(enemy_piece.piece_type);
                 let available_enemy_moves: Vec<Position> =
-                    get_possible_moves_for_piece(enemy_piece, &board_copy);
+                    context.get_moves(enemy_piece, &board_copy);
 
                 retain_move = !available_enemy_moves.iter().any(|&pos| {
                     if piece.piece_type == PieceType::King {

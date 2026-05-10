@@ -1,5 +1,5 @@
 use crate::board::{simulate_move, ColLabel, Position, PositionLabel, Tile};
-use crate::pieces::{get_possible_moves_for_piece, KingData, PieceType, Team};
+use crate::pieces::{KingData, PieceType, Team};
 use bevy::window::{WindowResolution, WindowTheme};
 use bevy::{prelude::*, window::PresentMode};
 

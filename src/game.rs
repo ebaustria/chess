@@ -4,7 +4,7 @@ use crate::board::{
     HALF_TILE, NUM_COLUMNS, NUM_ROWS, TILE_SIZE,
 };
 use crate::check::{check_checkmate, prevent_check};
-use crate::pieces::{get_possible_moves_for_piece, init_piece_data, Team};
+use crate::pieces::{init_piece_data, PieceContext, Team};
 use crate::util::load_image;
 use crate::{GameState, Light, Piece, Selected};
 use bevy::app::{App, FixedUpdate, Update};
@@ -203,7 +203,8 @@ fn select_piece_system(
                     commands.entity(ent).remove::<Selected>();
                 }
                 commands.entity(entity).insert(Selected);
-                piece.available_moves = get_possible_moves_for_piece(&piece, &game_state.board);
+                let context = PieceContext::new(piece.piece_type);
+                piece.available_moves = context.get_moves(&piece, &game_state.board);
                 break;
             }
         }

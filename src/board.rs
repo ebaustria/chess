@@ -1,5 +1,6 @@
+use crate::pieces::PieceContext;
 use crate::util::transform_mouse_coords;
-use crate::{get_possible_moves_for_piece, Entity, GameState, KingData, Piece, PieceType, Team};
+use crate::{Entity, GameState, KingData, Piece, PieceType, Team};
 use bevy::color::palettes::css;
 use bevy::ecs::component::Component;
 use bevy::prelude::{Color, Vec2};
@@ -90,12 +91,13 @@ pub fn init_king_positions(
 
 pub fn update_king_data(piece: &Piece, game_state: &mut GameState, pos: Position) {
     if init_king_positions(piece.piece_type, piece.team, game_state, pos) {
+        let piece_context = PieceContext::new(piece.piece_type);
         if piece.team == Team::White {
             game_state.white_king_data.available_moves =
-                get_possible_moves_for_piece(piece, &game_state.board);
+                piece_context.get_moves(piece, &game_state.board);
         } else {
             game_state.black_king_data.available_moves =
-                get_possible_moves_for_piece(piece, &game_state.board);
+                piece_context.get_moves(piece, &game_state.board);
         }
     }
 }
